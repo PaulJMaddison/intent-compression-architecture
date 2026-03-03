@@ -1,33 +1,57 @@
 # Intent Compression Architecture (ICA)
 
-**Engineering design proposal** for a clarification-first layer that improves precision, reduces token waste, and stabilizes agent workflows.
+Engineering design proposal for a clarification-first layer that reduces ambiguity-induced entropy in large-scale language models.
 
-## Plain-English summary
-People often ask questions in shorthand. When a question is ambiguous (missing constraints, or using contested labels), models may hedge across multiple interpretations. That makes answers longer and less specific — and it costs more compute.
+---
 
-**ICA changes the flow:** when the system detects meaningful ambiguity, it asks one short, targeted clarifying question first. Once you confirm what you mean, it answers directly conditioned on that confirmed intent.
+## The Core Problem
 
-## Why it matters (in practice)
-- **More precise answers:** better match to what the user actually meant.
-- **Lower token usage:** fewer long, hedged answers written “just in case”.
-- **More reliable agents:** coding/research agents do fewer loops and retries because constraints are confirmed early.
-- **Clearer accountability:** responses can explicitly say “based on your definition…”, reducing misunderstandings.
+LLMs often answer the literal wording of a question, even when the intended meaning depends on unstated definitions or constraints.
+When ambiguity exists, models may hedge across interpretations, increasing token usage and reducing specificity.
 
-## Contents
-- **ICA_Engineering_Design_Proposal.pdf** — the main document (hybrid: plain English + architecture + evaluation plan)
-- **diagrams/architecture.png** — pipeline diagram
+---
 
-## Core proposal (technical)
-Add an explicit **Ambiguity Detection → Clarification → Intent Tag → Conditioned Answer** layer:
-- If ambiguity is low → answer immediately
-- If ambiguity is high → ask a minimal clarification question → answer conditioned on confirmed intent
+## The Proposal
 
-## Evaluation plan (high-level)
-Metrics proposed include:
-- Total Tokens per Resolved Task (TTRT)
-- Agent Loop Depth Reduction (ALDR)
-- Response Specificity Index (RSI)
-- Success Rate @ Budget
+ICA introduces:
 
-## Contact
-Add your preferred contact method here (email / LinkedIn / X).
+1. Ambiguity Detection  
+2. Minimal Clarification Question  
+3. Intent Tag Construction  
+4. Conditioned Answer Generation  
+
+If ambiguity is low, the system answers immediately.
+
+---
+
+## Practical Benefits
+
+- Higher precision responses  
+- Lower token usage  
+- Fewer coding/research agent loops  
+- Improved reasoning transparency  
+
+---
+
+## Evaluation Metrics
+
+- Total Tokens per Resolved Task (TTRT)  
+- Agent Loop Depth Reduction (ALDR)  
+- Response Specificity Index (RSI)  
+- Success Rate @ Budget  
+
+---
+
+## Repository Contents
+
+- ICA_Engineering_Design_Proposal.pdf  
+- diagrams/architecture.png  
+- LICENSE  
+
+---
+
+## Author
+
+Paul Maddison  
+Email: paul.maddison.delimeg@gmail.com  
+LinkedIn: https://www.linkedin.com/in/paul-maddison-b83395175/
