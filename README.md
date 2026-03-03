@@ -1,189 +1,78 @@
 # Intent Compression Architecture (ICA)
 
-Clarification‑First Ambiguity Management for Large‑Scale Language Models
+**Clarification-first ambiguity management for large-scale language models**
 
-Author: Paul Maddison  
-Email: paul.maddison.delimeg@gmail.com  
-LinkedIn: https://www.linkedin.com/in/paul-maddison-b83395175/
+**Author:** Paul Maddison  
+**Email:** paul.maddison.delimeg@gmail.com  
+**LinkedIn:** https://www.linkedin.com/in/paul-maddison-b83395175/
 
 ---
 
-## Overview
+## What this is
 
-Intent Compression Architecture (ICA) is a structural framework designed to reduce ambiguity before full answer generation in large language models.
+ICA is an engineering proposal to improve **precision**, **token efficiency**, and **agent reliability** by resolving **meaningful ambiguity before answering**.
 
-The core thesis is:
+Large language models often answer the literal wording of a question even when the user’s meaning depends on unstated definitions or missing constraints. When a query has multiple plausible interpretations, the model tends to hedge across them, producing broader answers that use more tokens and feel less precise.
+
+ICA adds a clarification-first layer that asks **one minimal, targeted clarifying question** only when the ambiguity would materially change the answer. Once the user confirms intent, the model answers conditioned on that confirmed intent.
+
+---
+
+## The core structural claim
 
 Ambiguity increases interpretive entropy.  
-Interpretive entropy increases answer breadth.  
-Answer breadth increases token consumption and reduces precision.
+Interpretive entropy increases answer breadth (hedging).  
+Answer breadth increases token consumption and reduces specificity.
 
-ICA introduces a clarification-first layer that collapses interpretive entropy prior to generation.
-
----
-
-## The Structural Problem
-
-Human questions frequently contain:
-
-- Missing constraints  
-- Implicit assumptions  
-- Contested definitions  
-- Referential ambiguity  
-- Causal ambiguity  
-- Task-type ambiguity  
-
-When multiple interpretations are plausible, models implicitly distribute probability across interpretations. This produces broader, hedged responses that:
-
-- Use more tokens  
-- Reduce specificity  
-- Increase instability in agent workflows  
-
-This is a structural issue, not a stylistic one.
+ICA collapses interpretive entropy early by moving generation from **P(A|Q)** to **P(A|Q,T)** where **T** is a confirmed intent representation.
 
 ---
 
-## Reverse Funnel Hypothesis
+## Reverse Funnel hypothesis
 
-As user scale increases, interpretive variance increases.
-
-Under preference optimisation systems, broadly acceptable responses are often rewarded when ambiguity exists. This can cause answers to generalise rather than narrow.
-
-The result:
-
-- Increased answer length  
-- Reduced precision  
-- Higher compute per resolved task  
-
-ICA reverses this by narrowing interpretation before generation.
+As systems scale, user heterogeneity increases interpretive variance for ambiguous prompts. Optimisation pressure can reward broadly acceptable answers under uncertainty, leading to systematic broadening (longer, more hedged answers). ICA reverses this by narrowing interpretation before generation.
 
 ---
 
-## ICA Mechanism
+## What ICA does (pipeline)
 
-1. User query Q enters the system.
-2. Ambiguity detection estimates interpretive entropy.
-3. If entropy exceeds a calibrated threshold, a minimal clarification question C is generated.
-4. User confirms intent T.
-5. Final response is generated conditioned on (Q, T).
+1. **Ambiguity detector** estimates whether ambiguity is present *and* whether it would change the answer.
+2. **Clarification selector** asks a minimal question that removes maximum uncertainty per token.
+3. **Intent tag (T)** captures the confirmed definition/constraints.
+4. **Answer generator** responds conditioned on (Q, T).
 
-Generation shifts from:
-
-P(A | Q)
-
-to:
-
-P(A | Q, T)
-
-This narrows the output distribution.
+If ambiguity is low, the system answers immediately.
 
 ---
 
-## Ambiguity Taxonomy
+## Why it saves compute
 
-ICA distinguishes:
+For ambiguous prompts, a short clarification + a narrower conditioned answer can be cheaper than a long hedged answer.
 
-- Definition ambiguity  
-- Constraint ambiguity  
-- Referential ambiguity  
-- Causal ambiguity  
-- Task-type ambiguity  
-
-Clarification triggers only when ambiguity materially changes the correct answer.
-
----
-
-## Interpretive Entropy Model
-
-Let Q induce a distribution over interpretations I.
-
-H(I | Q) represents interpretive uncertainty.
-
-Traditional generation integrates across interpretations.
-
-ICA collapses entropy before answer generation by confirming intent.
+The proposal includes a worked token model and an evaluation plan to measure:
+- Total Tokens per Resolved Task (TTRT)
+- Clarification trigger rate and usefulness
+- Response Specificity Index (RSI)
+- Agent Loop Depth Reduction (ALDR)
+- Success Rate @ Budget
 
 ---
 
-## Token Cost Modelling
+## Why it matters for agents
 
-Illustrative example:
-
-Hedged response: 280 tokens  
-Clarification: 22 tokens  
-Conditioned response: 140 tokens  
-
-ICA total: 162 tokens  
-Reduction: ~42%
-
-Even modest reductions scale significantly at high query volumes.
+In coding/research agents, early ambiguity increases the branching factor of planning trees (roughly O(b^d)). Confirming constraints early can reduce branching and retries exponentially, improving completion rates under a fixed compute budget.
 
 ---
 
-## Agent Branching Reduction
+## What’s in this repo
 
-In agent systems, ambiguity increases branching factor (b) and depth (d).
-
-Search complexity approximates O(b^d).
-
-Example:
-
-4^4 = 256 paths  
-2^4 = 16 paths  
-
-Early clarification dramatically reduces compute expansion.
-
----
-
-## Clarification Optimisation Objective
-
-Optimal clarification maximises entropy reduction per token:
-
-argmax [ H(I|Q) − H(I|Q,C) ] / TokenCost(C)
-
-Clarification must be information-efficient.
-
----
-
-## Scaling Feedback Loop
-
-Each clarification-confirmation interaction produces structured data:
-
-(Q, C, T)
-
-As this dataset grows:
-
-- Ambiguity detection improves  
-- Intent modelling improves  
-- Clarification frequency decreases  
-- Precision remains high  
-
-Efficiency compounds over time.
-
----
-
-## Risks and Trade-offs
-
-- Over-clarification friction  
-- Increased latency  
-- False premise reinforcement  
-- Ambiguity misclassification  
-- Adversarial manipulation  
-
-Mitigation requires calibrated thresholds and premise-aware design.
-
----
-
-## Repository Contents
-
-- ICA_Engineering_Design_Proposal_v4.pdf  
-- Embedded architecture diagrams  
-- README_FULL_v4.md  
+- **ICA_Engineering_Design_Proposal_v5.pdf** — full detailed proposal (math framing, taxonomy, diagrams, token model, agent model, evaluation plan, risks, roadmap, examples)
+- **diagrams/** — embedded figures used in the PDF
+- **README.md** — this overview
+- **LICENSE**
 
 ---
 
 ## Status
 
-Engineering design proposal.  
-Formal large-scale empirical validation pending.
-
+Engineering design proposal. Implementation and empirical validation are proposed in the evaluation section.
