@@ -1,52 +1,57 @@
 # Intent Compression Architecture (ICA)
 
-Engineering design proposal for a clarification-first layer that reduces ambiguity-induced entropy in large-scale language models.
+## Overview
+
+Intent Compression Architecture (ICA) is a clarification-first interaction framework for large-scale language models.
+
+The central claim is structural: ambiguity increases interpretive entropy, interpretive entropy increases answer breadth, and answer breadth increases token consumption and reduces precision.
+
+ICA reduces entropy before full answer generation.
 
 ---
 
-## The Core Problem
+## Core Mechanism
 
-LLMs often answer the literal wording of a question, even when the intended meaning depends on unstated definitions or constraints.
-When ambiguity exists, models may hedge across interpretations, increasing token usage and reducing specificity.
+1. Detect material ambiguity.
+2. Ask a minimal clarification question.
+3. Construct explicit intent representation.
+4. Generate response conditioned on confirmed intent.
+
+If ambiguity is low, answer immediately.
 
 ---
 
-## The Proposal
+## Reverse Funnel Hypothesis
 
-ICA introduces:
+As user scale increases, interpretive variance increases. Optimisation pressure favours broadly acceptable answers. This expands answer breadth rather than narrowing it. ICA structurally reverses this dynamic.
 
-1. Ambiguity Detection  
-2. Minimal Clarification Question  
-3. Intent Tag Construction  
-4. Conditioned Answer Generation  
+---
 
-If ambiguity is low, the system answers immediately.
+## Technical Elements
+
+- Interpretive entropy modelling
+- Token cost simulation
+- Agent branching reduction analysis
+- RLHF interaction analysis
+- Clarification optimisation objective
+- Scaling data flywheel
 
 ---
 
 ## Practical Benefits
 
-- Higher precision responses  
-- Lower token usage  
-- Fewer coding/research agent loops  
-- Improved reasoning transparency  
-
----
-
-## Evaluation Metrics
-
-- Total Tokens per Resolved Task (TTRT)  
-- Agent Loop Depth Reduction (ALDR)  
-- Response Specificity Index (RSI)  
-- Success Rate @ Budget  
+- Reduced tokens per resolved task
+- Higher precision in ambiguous prompts
+- Lower agent loop depth
+- Compounding improvement via intent-labelled data
 
 ---
 
 ## Repository Contents
 
-- ICA_Engineering_Design_Proposal.pdf  
-- diagrams/architecture.png  
-- LICENSE  
+- ICA_Engineering_Design_Proposal_v3.pdf
+- Architecture diagrams
+- Licensing information
 
 ---
 
