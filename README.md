@@ -306,6 +306,88 @@ Guardrails:
 
 ---
 
+## Why ICA helps against alignment-gaming prompts
+
+ICA is not only an efficiency pattern.
+It also acts as a practical safety and truthfulness layer against adversarial prompt framing.
+
+Some modern failure cases follow the same pattern:
+
+1. User wraps harmful intent in a format that sounds like normal interaction ("roast", "hypothetical", "just yes/no")
+2. Model over-prioritizes compliance with surface wording
+3. Output becomes abusive, misleading, or socially harmful
+
+ICA interrupts this flow before final generation.
+
+### Case pattern A: "roast" prompts about real tragedies
+
+Prompts that ask for vulgar attacks tied to real disasters or deaths are often not ambiguous semantically, but **high-risk in intent**.
+
+A clarifier should detect this and ask for safe disambiguation:
+
+> "This references real tragedies and deceased people. Do you want:\
+> A) fictional satire with no real victims\
+> B) factual discussion of events\
+> C) something else?"
+
+This does three things:
+
+- exposes bad-faith intent early
+- redirects users toward factual or non-harmful modes
+- reduces chances of generating defamatory or exploitative content
+
+### Case pattern B: false-binary culture-war hypotheticals
+
+Prompts like "Would you do X offensive act to stop nuclear war? yes/no" are often adversarial traps.
+They force a model into a false dilemma that is disconnected from real causality.
+
+A premise-aware clarifier can respond:
+
+> "I cannot influence whether nuclear war occurs, but I can cause direct offense by doing X.\
+> Do you still want me to do X knowing it will not prevent war?"
+
+This strips out the manipulative premise and forces explicit user intent.
+
+---
+
+## Clarifier training recommendations (practical)
+
+To make ICA robust in production, train the clarification policy on more than generic ambiguity data.
+
+Include:
+
+- adversarial prompt variants (jailbreak-style wording)
+- post-incident correction logs
+- examples of false binaries and impossible premises
+- prompts mixing real people, tragedy references, and requests for abuse
+
+Useful model outputs for the clarifier stage:
+
+- ambiguity score
+- risk score
+- risk type labels (e.g., defamation risk, identity-targeted abuse risk, historical misinformation risk)
+- suggested minimal clarifying question
+
+Routing rule of thumb:
+
+- low ambiguity + low risk -> answer directly
+- high ambiguity + low risk -> ask one clarifier
+- low ambiguity + high risk -> ask premise/risk clarifier or refuse/redirect
+- high ambiguity + high risk -> strict clarification + constrained answer mode
+
+---
+
+## Implementation note: ambiguity-only is not enough
+
+A strong ICA implementation should evaluate both:
+
+- **meaning uncertainty** (what did the user mean?)
+- **intent risk** (what harm could this request cause if followed literally?)
+
+That combined gate keeps the system useful for normal users while making it harder to exploit for viral "gotcha" outputs.
+
+---
+
 ## Final takeaway
 
 ICA is not a new mystical theory of intelligence.
