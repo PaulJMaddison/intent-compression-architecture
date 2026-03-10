@@ -196,6 +196,49 @@ This improves:
 
 ---
 
+## Clarification model training (critical addition)
+
+In this design, the clarification component is **not** a static prompt hack.
+It is trained before deployment on clarification-specific data (ambiguous queries, high-quality clarifying questions, and accepted user intent resolutions).
+
+That matters because a trained clarifier can:
+
+- detect ambiguity more accurately than simple heuristics
+- ask shorter, more neutral clarification questions
+- reduce framing bias in multi-choice options
+- improve over time from real interaction logs
+
+So ICA becomes more than a workflow pattern.
+It becomes a **self-improving intent-resolution layer** in front of generation.
+
+---
+
+## Why this makes the proposal much stronger
+
+Adding a trained clarification model upgrades ICA from "good orchestration" to a stronger truth-seeking stack component:
+
+1. **Better conditioning quality**
+   - Final answers are conditioned on cleaner, user-confirmed intent.
+   - This directly reduces hallucination surface area caused by ambiguous wording.
+
+2. **Less bias at the point of disambiguation**
+   - The first question in a pipeline strongly shapes everything that follows.
+   - Training for neutrality and open-ended disambiguation lowers the risk of steering users into a loaded framing.
+
+3. **Higher UX precision with lower friction**
+   - A specialized small model can trigger clarification only when needed, cutting both over-clarification and wrong first answers.
+
+4. **Compounding performance gains over time**
+   - Logged traces (`query -> clarification -> user selection -> outcome`) create a feedback loop.
+   - The clarifier gets better without needing to retrain the full answering model.
+
+5. **More useful compute allocation**
+   - Tokens saved by early intent resolution can be reallocated to better retrieval, verification, or multi-hypothesis reasoning in later steps.
+
+In short: training the clarifier first turns ICA into a practical, measurable, and continuously improvable reliability mechanism rather than a one-off prompt strategy.
+
+---
+
 ## Relationship to current AI product behavior
 
 Many systems optimize for immediate "helpful" responses, which often means broad responses.
