@@ -11,7 +11,7 @@
 Most AI conversations fail for a boring reason: **the question is ambiguous**.
 
 Current systems are usually tuned to answer immediately, even when the user could mean multiple things.
-That creates long, vague responses, follow-up corrections, and wasted tokens.
+That creates long, vague responses, follow-up corrections and wasted tokens.
 
 This repo argues for a simple fix:
 
@@ -59,7 +59,7 @@ Those responses are often:
 - less useful
 - more expensive
 
-Users then correct the model, and the model regenerates another long response.
+Users then correct the model and the model regenerates another long response.
 That loop burns cost and time.
 
 ICA breaks that loop.
@@ -153,7 +153,7 @@ It is about improving deterministic orchestration around probabilistic model cal
 
 ## Token and cost impact
 
-Clarification-first often reduces total token use.
+Clarification first often reduces total token use.
 
 Typical ambiguous loop:
 
@@ -199,7 +199,7 @@ This improves:
 ## Clarification model training (critical addition)
 
 In this design, the clarification component is **not** a static prompt hack.
-It is trained before deployment on clarification-specific data (ambiguous queries, high-quality clarifying questions, and accepted user intent resolutions).
+It is trained before deployment on clarification-specific data (ambiguous queries, high-quality clarifying questions and accepted user intent resolutions).
 
 That matters because a trained clarifier can:
 
@@ -235,7 +235,7 @@ Adding a trained clarification model upgrades ICA from "good orchestration" to a
 5. **More useful compute allocation**
    - Tokens saved by early intent resolution can be reallocated to better retrieval, verification, or multi-hypothesis reasoning in later steps.
 
-In short: training the clarifier first turns ICA into a practical, measurable, and continuously improvable reliability mechanism rather than a one-off prompt strategy.
+In short: training the clarifier first turns ICA into a practical, measurable and continuously improvable reliability mechanism rather than a one-off prompt strategy.
 
 ---
 
@@ -281,10 +281,10 @@ ICA can be tested with simple measurable metrics:
 
 - total tokens per resolved task
 - clarification rate
-- first-pass task success
+- first pass task success
 - retry count / loop depth
 - latency to correct answer
-- user-rated precision
+- user rated precision
 
 The goal is practical: better outcomes with less wasted generation.
 
@@ -321,7 +321,7 @@ ICA interrupts this flow before final generation.
 
 ### Case pattern A: "roast" prompts about real tragedies
 
-Prompts that ask for vulgar attacks tied to real disasters or deaths are often not ambiguous semantically, but **high-risk in intent**.
+Prompts that ask for vulgar attacks tied to real disasters or deaths are often not ambiguous semantically, but **high risk in intent**.
 
 A clarifier should detect this and ask for safe disambiguation:
 
@@ -332,7 +332,7 @@ A clarifier should detect this and ask for safe disambiguation:
 
 This does three things:
 
-- exposes bad-faith intent early
+- exposes bad faith intent early
 - redirects users toward factual or non-harmful modes
 - reduces chances of generating defamatory or exploitative content
 
@@ -356,16 +356,16 @@ To make ICA robust in production, train the clarification policy on more than ge
 
 Include:
 
-- adversarial prompt variants (jailbreak-style wording)
-- post-incident correction logs
+- adversarial prompt variants (jailbreak style wording)
+- post incident correction logs
 - examples of false binaries and impossible premises
-- prompts mixing real people, tragedy references, and requests for abuse
+- prompts mixing real people, tragedy references and requests for abuse
 
 Useful model outputs for the clarifier stage:
 
 - ambiguity score
 - risk score
-- risk type labels (e.g., defamation risk, identity-targeted abuse risk, historical misinformation risk)
+- risk type labels (e.g., defamation risk, identity targeted abuse risk, historical misinformation risk)
 - suggested minimal clarifying question
 
 Routing rule of thumb:
