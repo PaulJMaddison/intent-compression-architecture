@@ -27,7 +27,7 @@
 
 ```bash
 python -m pip install -r requirements.txt
-./scripts/validate_local.sh
+bash scripts/validate_local.sh
 ```
 
 For a more exact replay of the currently documented environment, use `requirements.lock` instead of
@@ -563,7 +563,7 @@ python -m pip install -r requirements.lock
 2. Validate the clarifier contract:
 
 ```bash
-./scripts/validate_local.sh
+bash scripts/validate_local.sh
 ```
 
 On Windows PowerShell, use:

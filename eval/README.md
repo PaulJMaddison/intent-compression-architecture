@@ -40,7 +40,7 @@ A one-shot direct answer can look artificially cheap if the measurement stops be
 To reproduce the current pilot artifacts from this repository:
 
 1. install the Python dependencies used by the benchmark and document scripts
-2. run `./scripts/validate_local.sh` or `./scripts/validate_local.ps1`
+2. run `bash scripts/validate_local.sh` or `./scripts/validate_local.ps1`
 3. inspect `eval/pilot_results.csv` and `eval/pilot_results.md`
 
 Recommended install command:
@@ -58,7 +58,7 @@ python -m pip install -r requirements.lock
 Minimal validation command:
 
 ```bash
-./scripts/validate_local.sh
+bash scripts/validate_local.sh
 ```
 
 Both helper scripts honor a `PYTHON` environment variable if you want to target a specific interpreter.
