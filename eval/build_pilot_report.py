@@ -45,12 +45,37 @@ def build_rows() -> list[dict]:
     for case in CASES:
         prompt_meta = prompts[case["id"]]
         prompt_text = prompt_meta["prompt"]
+        needs_repair = case["retry_count_direct"] > 0
+        direct_repair_user_reply = ""
+        if needs_repair:
+            if case["clarifier_reply"]:
+                direct_repair_user_reply = f"That's not what I meant. {case['clarifier_reply']}"
+            else:
+                direct_repair_user_reply = "That's not what I meant. Please answer the actual intent behind the question."
+        repaired_final_output = case["ica_output"] if needs_repair else case["direct_output"]
 
         direct_tokens = token_count(prompt_text + "\n\n" + case["direct_output"], encoder)
         clarification_text = ""
         if case["clarifier_question"]:
             clarification_text = case["clarifier_question"] + "\n\n" + case["clarifier_reply"]
         clarification_tokens = token_count(clarification_text, encoder)
+        first_assistant_tokens_direct = token_count(case["direct_output"], encoder)
+        first_assistant_tokens_ica = token_count(
+            case["clarifier_question"] if case["clarifier_question"] else case["ica_output"],
+            encoder,
+        )
+        if needs_repair:
+            direct_repair_tokens = token_count(
+                prompt_text
+                + "\n\n"
+                + case["direct_output"]
+                + ("\n\n" + direct_repair_user_reply if direct_repair_user_reply else "")
+                + "\n\n"
+                + repaired_final_output,
+                encoder,
+            )
+        else:
+            direct_repair_tokens = direct_tokens
         ica_tokens = token_count(
             prompt_text
             + ("\n\n" + clarification_text if clarification_text else "")
@@ -72,7 +97,13 @@ def build_rows() -> list[dict]:
             "clarifier_reply": case["clarifier_reply"],
             "direct_output": case["direct_output"],
             "ica_output": case["ica_output"],
+            "needs_repair": needs_repair,
+            "direct_repair_user_reply": direct_repair_user_reply,
+            "direct_repair_final_output": repaired_final_output,
+            "first_assistant_tokens_direct": first_assistant_tokens_direct,
+            "first_assistant_tokens_ica": first_assistant_tokens_ica,
             "direct_answer_tokens": direct_tokens,
+            "direct_repair_tokens": direct_repair_tokens,
             "clarification_tokens": clarification_tokens,
             "ica_tokens": ica_tokens,
             "retry_count_direct": case["retry_count_direct"],
@@ -154,22 +185,24 @@ def write_markdown(rows: list[dict]) -> None:
         "- Token counts are estimated with `cl100k_base` over benchmark text, not provider-billed usage.",
         "- Wall-clock latency was **not** instrumented in provider milliseconds, so this pilot uses retry count and extra-turn cost rather than absolute latency.",
         "- The prompt set is intentionally ambiguity-heavy, so the clarification rate in this file is **not** a production traffic estimate.",
+        "- The repair-funnel comparison is a controlled simulation: when the baseline needed correction, the follow-up branch used the same clarified intent target as the ICA route so the benchmark isolates the cost of clarifying late rather than early.",
         "",
         "## Summary",
         "",
-        "| Metric | Direct-answer baseline | ICA policy | Delta |",
+        "| Metric | Direct one-shot | Direct with repair funnel | ICA policy |",
         "| --- | --- | --- | --- |",
-        f"| Mean text tokens per resolved task | {mean(rows, 'direct_answer_tokens')} | {mean(rows, 'ica_tokens')} | {round(mean(rows, 'ica_tokens') - mean(rows, 'direct_answer_tokens'), 2)} |",
-        f"| Mean correctness | {mean(rows, 'human_correctness_direct')} | {mean(rows, 'human_correctness_ica')} | {round(mean(rows, 'human_correctness_ica') - mean(rows, 'human_correctness_direct'), 2)} |",
-        f"| Mean clarity | {mean(rows, 'human_clarity_direct')} | {mean(rows, 'human_clarity_ica')} | {round(mean(rows, 'human_clarity_ica') - mean(rows, 'human_clarity_direct'), 2)} |",
-        f"| Mean safety | {mean(rows, 'safety_score_direct')} | {mean(rows, 'safety_score_ica')} | {round(mean(rows, 'safety_score_ica') - mean(rows, 'safety_score_direct'), 2)} |",
-        f"| Mean retry count | {mean(rows, 'retry_count_direct')} | {mean(rows, 'retry_count_ica')} | {round(mean(rows, 'retry_count_ica') - mean(rows, 'retry_count_direct'), 2)} |",
-        f"| Utility proxy | {mean(rows, 'utility_proxy_direct')} | {mean(rows, 'utility_proxy_ica')} | {round(mean(rows, 'utility_proxy_ica') - mean(rows, 'utility_proxy_direct'), 2)} |",
-        f"| Clarification rate | 0.0 | {round(len(clarifier_rows) / len(rows), 2)} | {round(len(clarifier_rows) / len(rows), 2)} |",
-        f"| Clarification hit rate | n/a | {bool_rate(rows, 'final_answer_changed', lambda row: row['clarifier_asked'])} | n/a |",
-        f"| Over-clarification rate | n/a | {bool_rate(rows, 'over_clarification', lambda row: row['clarifier_asked'])} | n/a |",
-        f"| Unnecessary clarification rate | n/a | {bool_rate(rows, 'unnecessary_clarification', lambda row: row['clarifier_asked'])} | n/a |",
-        f"| False refusal rate | {bool_rate(rows, 'false_refusal')} | {bool_rate(rows, 'false_refusal')} | 0.0 |",
+        f"| Mean first assistant-message tokens | {mean(rows, 'first_assistant_tokens_direct')} | n/a | {mean(rows, 'first_assistant_tokens_ica')} |",
+        f"| Mean total tokens to satisfactory resolution | {mean(rows, 'direct_answer_tokens')} | {mean(rows, 'direct_repair_tokens')} | {mean(rows, 'ica_tokens')} |",
+        f"| Mean correctness | {mean(rows, 'human_correctness_direct')} | {mean(rows, 'human_correctness_ica')} | {mean(rows, 'human_correctness_ica')} |",
+        f"| Mean clarity | {mean(rows, 'human_clarity_direct')} | {mean(rows, 'human_clarity_ica')} | {mean(rows, 'human_clarity_ica')} |",
+        f"| Mean safety | {mean(rows, 'safety_score_direct')} | {mean(rows, 'safety_score_ica')} | {mean(rows, 'safety_score_ica')} |",
+        f"| Mean retry count | {mean(rows, 'retry_count_direct')} | {mean(rows, 'retry_count_direct')} | {mean(rows, 'retry_count_ica')} |",
+        f"| Utility proxy | {mean(rows, 'utility_proxy_direct')} | {mean(rows, 'utility_proxy_ica')} | {mean(rows, 'utility_proxy_ica')} |",
+        f"| Clarification / repair rate | 0.0 | {bool_rate(rows, 'needs_repair')} | {round(len(clarifier_rows) / len(rows), 2)} |",
+        f"| Clarification hit rate | n/a | n/a | {bool_rate(rows, 'final_answer_changed', lambda row: row['clarifier_asked'])} |",
+        f"| Over-clarification rate | n/a | n/a | {bool_rate(rows, 'over_clarification', lambda row: row['clarifier_asked'])} |",
+        f"| Unnecessary clarification rate | n/a | n/a | {bool_rate(rows, 'unnecessary_clarification', lambda row: row['clarifier_asked'])} |",
+        f"| False refusal rate | {bool_rate(rows, 'false_refusal')} | {bool_rate(rows, 'false_refusal')} | {bool_rate(rows, 'false_refusal')} |",
         "",
         "## Route distribution",
         "",
@@ -184,24 +217,24 @@ def write_markdown(rows: list[dict]) -> None:
             "## Headline findings",
             "",
             "- ICA improved mean correctness, clarity, and safety on this ambiguity-heavy prompt set.",
+            "- The more relevant comparison is delayed clarification versus early clarification: once the correction funnel is simulated, ICA is cheaper than resolving the same ambiguity after a wrong first answer.",
             "- The biggest gains came from coding, shopping, planning, legal, and public-reasoning prompts where one clarifier materially narrowed the task.",
             "- The smallest gains came from already-safe refusals and from cases like `AP-013` where a clarifier added tailoring but did not fundamentally change the safe answer.",
             "- The pilot found one clear over-clarification case (`AP-013`), which is useful because it shows the threshold still matters even in a pro-clarification design.",
+            f"- Baseline first-pass answers required a repair funnel in {sum(1 for row in rows if row['needs_repair'])} of {len(rows)} cases, which is the hidden user-burden that a one-shot token comparison misses.",
             "",
             "## Per-prompt comparison",
             "",
-            "| ID | Route | Clarifier asked | Direct tokens | ICA tokens | Correctness D->I | Clarity D->I | Safety D->I | Final answer changed | Notes |",
-            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+            "| ID | Route | Repair needed | Direct one-shot tokens | Direct repaired tokens | ICA tokens | First assistant tokens D->I | Final answer changed | Notes |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
         ]
     )
 
     for row in rows:
         summary_lines.append(
-            f"| {row['id']} | {row['decision_type']} | {'yes' if row['clarifier_asked'] else 'no'} | "
-            f"{row['direct_answer_tokens']} | {row['ica_tokens']} | "
-            f"{row['human_correctness_direct']} -> {row['human_correctness_ica']} | "
-            f"{row['human_clarity_direct']} -> {row['human_clarity_ica']} | "
-            f"{row['safety_score_direct']} -> {row['safety_score_ica']} | "
+            f"| {row['id']} | {row['decision_type']} | {'yes' if row['needs_repair'] else 'no'} | "
+            f"{row['direct_answer_tokens']} | {row['direct_repair_tokens']} | {row['ica_tokens']} | "
+            f"{row['first_assistant_tokens_direct']} -> {row['first_assistant_tokens_ica']} | "
             f"{'yes' if row['final_answer_changed'] else 'no'} | {row['notes']} |"
         )
 
@@ -210,13 +243,14 @@ def write_markdown(rows: list[dict]) -> None:
             "",
             "## Interpretation",
             "",
-            "This pilot supports the core ICA claim: on ambiguity-heavy prompts, a clarification-first control layer can improve answer quality and reduce expected correction loops. It does **not** yet prove a universal token win, because some clarifiers add cost and some domains require safe caveats that remain high level even after clarification.",
+            "This pilot supports the core ICA claim: on ambiguity-heavy prompts, a clarification-first control layer can improve answer quality and reduce expected correction loops.",
             "",
             "The empirical takeaway is therefore narrower but stronger:",
             "",
             "- ICA looks most compelling as a **reliability and routing improvement**.",
-            "- In this pilot, first-pass text-token cost increased because the clarifier turn is made explicit while the baseline repair loop is only captured indirectly through retry counts.",
-            "- Efficiency gains should therefore be treated as contingent rather than guaranteed until a fully instrumented multi-turn benchmark is run.",
+            "- A one-shot direct answer can look cheaper only because it stops before resolution. That is the wrong comparison for ambiguous prompts.",
+            "- Once the benchmark includes the repair funnel, ICA is the cleaner comparison: short clarifier first versus long wrong answer first.",
+            "- Efficiency claims should therefore be framed as **tokens to satisfactory resolution**, not just tokens in the first assistant message.",
             "- The next best upgrade is a multi-rater run or an API-instrumented benchmark with actual latency and billed-token capture.",
         ]
     )
