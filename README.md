@@ -1,8 +1,10 @@
-# Intent Compression Architecture (ICA)
+# Intent Compression Architecture: A Clarification-First Control Layer for Reliable LLM Systems
 
 **Author:** Paul Maddison  
 **Email:** paul.maddison.delimeg@gmail.com  
 **LinkedIn:** https://www.linkedin.com/in/paul-maddison-b83395175/
+
+**Short name:** ICA
 
 ---
 
