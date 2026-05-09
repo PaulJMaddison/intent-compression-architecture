@@ -18,6 +18,8 @@
 - Benchmark prompt set: [`examples/ambiguous_prompts.csv`](examples/ambiguous_prompts.csv)
 - Evaluation protocol: [`eval/README.md`](eval/README.md)
 - Sample reporting format: [`eval/sample_results.md`](eval/sample_results.md)
+- Pilot benchmark report: [`eval/pilot_results.md`](eval/pilot_results.md)
+- Pilot benchmark data table: [`eval/pilot_results.csv`](eval/pilot_results.csv)
 
 ---
 
@@ -387,6 +389,8 @@ This repo now includes a lightweight benchmark scaffold:
 - prompt set: [`examples/ambiguous_prompts.csv`](examples/ambiguous_prompts.csv)
 - protocol: [`eval/README.md`](eval/README.md)
 - reporting template: [`eval/sample_results.md`](eval/sample_results.md)
+- first-pass pilot benchmark: [`eval/pilot_results.md`](eval/pilot_results.md)
+- machine-readable pilot table: [`eval/pilot_results.csv`](eval/pilot_results.csv)
 
 The intended benchmark compares a direct-answer baseline against an ICA policy across 20 to 50 ambiguous prompts.
 
