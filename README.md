@@ -27,13 +27,19 @@
 
 ```bash
 python -m pip install -r requirements.txt
-python -m py_compile eval/build_pilot_report.py scripts/build_repo_artifacts.py
-python -m jsonschema spec/clarifier_output.schema.json -i spec/clarifier_output.example.json
-python eval/build_pilot_report.py
+./scripts/validate_local.sh
 ```
 
 For a more exact replay of the currently documented environment, use `requirements.lock` instead of
 `requirements.txt`.
+
+On Windows PowerShell, use:
+
+```powershell
+./scripts/validate_local.ps1
+```
+
+If you need to target a specific interpreter, set `PYTHON` first and then run the same helper script.
 
 ---
 
@@ -557,22 +563,31 @@ python -m pip install -r requirements.lock
 2. Validate the clarifier contract:
 
 ```bash
-python -m py_compile eval/build_pilot_report.py scripts/build_repo_artifacts.py
-python -m jsonschema spec/clarifier_output.schema.json -i spec/clarifier_output.example.json
+./scripts/validate_local.sh
 ```
 
-3. Regenerate the pilot benchmark outputs:
+On Windows PowerShell, use:
+
+```powershell
+./scripts/validate_local.ps1
+```
+
+Both helper scripts honor a `PYTHON` environment variable if you want to target a specific interpreter.
+
+If you want to run the individual steps manually instead of the helper script:
 
 ```bash
+python -m py_compile eval/build_pilot_report.py scripts/build_repo_artifacts.py
+python -m jsonschema spec/clarifier_output.schema.json -i spec/clarifier_output.example.json
 python eval/build_pilot_report.py
 ```
 
-4. Inspect the generated artifacts:
+3. Inspect the generated artifacts:
 
 - [`eval/pilot_results.csv`](eval/pilot_results.csv)
 - [`eval/pilot_results.md`](eval/pilot_results.md)
 
-5. Regenerate the proposal artifacts if needed:
+4. Regenerate the proposal artifacts if needed:
 
 ```bash
 python scripts/build_repo_artifacts.py

@@ -40,9 +40,8 @@ A one-shot direct answer can look artificially cheap if the measurement stops be
 To reproduce the current pilot artifacts from this repository:
 
 1. install the Python dependencies used by the benchmark and document scripts
-2. validate the clarifier schema and example
-3. run `python eval/build_pilot_report.py`
-4. inspect `eval/pilot_results.csv` and `eval/pilot_results.md`
+2. run `./scripts/validate_local.sh` or `./scripts/validate_local.ps1`
+3. inspect `eval/pilot_results.csv` and `eval/pilot_results.md`
 
 Recommended install command:
 
@@ -59,9 +58,10 @@ python -m pip install -r requirements.lock
 Minimal validation command:
 
 ```bash
-python -m py_compile eval/build_pilot_report.py scripts/build_repo_artifacts.py
-python -m jsonschema spec/clarifier_output.schema.json -i spec/clarifier_output.example.json
+./scripts/validate_local.sh
 ```
+
+Both helper scripts honor a `PYTHON` environment variable if you want to target a specific interpreter.
 
 The published pilot is designed to test ambiguous-prompt handling, not to estimate production-wide clarification frequency.
 The next serious empirical upgrade remains a multi-rater or API-instrumented benchmark with actual billed-token and latency capture.
