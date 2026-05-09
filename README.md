@@ -27,6 +27,7 @@
 
 ```bash
 python -m pip install -r requirements.txt
+python -m py_compile eval/build_pilot_report.py scripts/build_repo_artifacts.py
 python -m jsonschema spec/clarifier_output.schema.json -i spec/clarifier_output.example.json
 python eval/build_pilot_report.py
 ```
@@ -319,8 +320,17 @@ python -m jsonschema spec/clarifier_output.schema.json -i spec/clarifier_output.
 ```
 
 The schema uses a canonical repo URL as its `$id`, and the example is intended to be machine-valid rather
-than illustrative only. The same check is also wired into GitHub Actions in
-[`.github/workflows/validate-clarifier-schema.yml`](.github/workflows/validate-clarifier-schema.yml).
+than illustrative only.
+
+This check can be run locally:
+
+```bash
+python -m jsonschema spec/clarifier_output.schema.json -i spec/clarifier_output.example.json
+```
+
+A GitHub Actions workflow is included in
+[`.github/workflows/validate-clarifier-schema.yml`](.github/workflows/validate-clarifier-schema.yml) as an
+optional CI template, but local validation is the canonical reproducibility path.
 
 Illustrative payload:
 
@@ -547,6 +557,7 @@ python -m pip install -r requirements.lock
 2. Validate the clarifier contract:
 
 ```bash
+python -m py_compile eval/build_pilot_report.py scripts/build_repo_artifacts.py
 python -m jsonschema spec/clarifier_output.schema.json -i spec/clarifier_output.example.json
 ```
 

@@ -59,6 +59,7 @@ python -m pip install -r requirements.lock
 Minimal validation command:
 
 ```bash
+python -m py_compile eval/build_pilot_report.py scripts/build_repo_artifacts.py
 python -m jsonschema spec/clarifier_output.schema.json -i spec/clarifier_output.example.json
 ```
 

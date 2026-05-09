@@ -544,7 +544,7 @@ def build_docx(diagram_path: Path) -> Path:
         "The control layer should emit a structured decision object rather than a free-form paragraph. This proposal includes a JSON schema and reference example in spec/clarifier_output.schema.json and spec/clarifier_output.example.json."
     )
     document.add_paragraph(
-        "The repository also includes a lightweight schema validation check so the example can be tested against the contract rather than presented as a static mockup."
+        "The repository also includes a lightweight schema validation path so the example can be tested against the contract rather than presented as a static mockup. Local validation is the canonical reproducibility path; the workflow file is only an optional CI template."
     )
     code = document.add_paragraph()
     code.style = document.styles["Normal"]
@@ -660,7 +660,7 @@ def build_docx(diagram_path: Path) -> Path:
         "In repaired-baseline scoring, final answer quality is equalized with ICA only when the baseline needed repair. The repaired utility score still penalizes extra repair tokens and retry burden so delayed clarification does not receive a free tie."
     )
     document.add_paragraph(
-        "Reproduction path: install dependencies from requirements.txt, or requirements.lock for a pinned replay, validate the schema/example pair, run eval/build_pilot_report.py, inspect the generated CSV and Markdown report, then regenerate the proposal artifacts if needed."
+        "Reproduction path: install dependencies from requirements.txt, or requirements.lock for a pinned replay, run py_compile on the benchmark and artifact scripts, validate the schema/example pair, run eval/build_pilot_report.py, inspect the generated CSV and Markdown report, then regenerate the proposal artifacts if needed."
     )
     document.add_paragraph(
         "Recommended next move: extend the single-rater pilot into a multi-rater or API-instrumented benchmark, then update the controller threshold and routing rules based on observed over-clarification, correction-funnel depth, silent-failure risk, false direct-answer, and false-refusal rates."
