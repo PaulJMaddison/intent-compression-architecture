@@ -1,0 +1,59 @@
+{
+  "query_id": "demo-001",
+  "ambiguity_score": 0.74,
+  "risk_score": 0.22,
+  "intent_entropy_bits": 1.41,
+  "risk_labels": [
+    "public_reasoning"
+  ],
+  "intent_hypotheses": [
+    {
+      "label": "persuasive political advocacy",
+      "probability": 0.46,
+      "answer_delta_if_true": "high",
+      "notes": "The answer should focus on rhetoric, persuasion, and overt ideology."
+    },
+    {
+      "label": "coordinated deceptive messaging",
+      "probability": 0.39,
+      "answer_delta_if_true": "high",
+      "notes": "The answer should require stronger evidence and clearer distinction between advocacy and deception."
+    },
+    {
+      "label": "other",
+      "probability": 0.15,
+      "answer_delta_if_true": "medium",
+      "notes": "Catch-all branch for definitions not captured by the first two interpretations."
+    }
+  ],
+  "candidate_clarifiers": [
+    {
+      "id": "q1",
+      "question": "When you say propaganda, do you mean persuasive political advocacy, coordinated deceptive messaging, or something else?",
+      "expected_information_gain_bits": 0.88,
+      "expected_utility": 0.41,
+      "estimated_cost_tokens": 22,
+      "estimated_latency_ms": 1400
+    },
+    {
+      "id": "q2",
+      "question": "Do you want a rhetorical analysis, a factual evidence assessment, or both?",
+      "expected_information_gain_bits": 0.52,
+      "expected_utility": 0.19,
+      "estimated_cost_tokens": 19,
+      "estimated_latency_ms": 1200
+    }
+  ],
+  "decision": "ask_clarifier",
+  "selected_clarifier_id": "q1",
+  "clarifying_question": "When you say propaganda, do you mean persuasive political advocacy, coordinated deceptive messaging, or something else?",
+  "expected_utility": 0.41,
+  "decision_threshold": 0.15,
+  "answer_constraints": [
+    "avoid loaded framing",
+    "define contested terms before conclusion",
+    "separate evidence from interpretation"
+  ],
+  "safe_redirect": null,
+  "rationale": "Ambiguity is high, the likely answer changes materially across intent hypotheses, and the best available clarifier clears the domain threshold."
+}

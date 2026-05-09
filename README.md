@@ -8,33 +8,68 @@
 
 ---
 
-## The problem this repo is solving (in plain English)
+## Primary artifacts
 
-Most AI conversations fail for a boring reason: **the question is ambiguous**.
-
-Current systems are usually tuned to answer immediately, even when the user could mean multiple things.
-That creates long, vague responses, follow-up corrections and wasted tokens.
-
-This repo argues for a simple fix:
-
-> **Minimize ambiguity before generation.**
-
-If a question has more than one valid meaning, the system should ask a short clarifying question only when the expected gain is worth the extra turn.
+- Proposal PDF: [`ICA_Engineering_Design_Proposal1.pdf`](ICA_Engineering_Design_Proposal1.pdf)
+- Proposal DOCX source: [`ICA_Engineering_Design_Proposal1.docx`](ICA_Engineering_Design_Proposal1.docx)
+- Architecture diagram: [`diagrams/architecture.png`](diagrams/architecture.png)
+- Clarifier contract schema: [`spec/clarifier_output.schema.json`](spec/clarifier_output.schema.json)
+- Clarifier contract example: [`spec/clarifier_output.example.json`](spec/clarifier_output.example.json)
+- Benchmark prompt set: [`examples/ambiguous_prompts.csv`](examples/ambiguous_prompts.csv)
+- Evaluation protocol: [`eval/README.md`](eval/README.md)
+- Sample reporting format: [`eval/sample_results.md`](eval/sample_results.md)
 
 ---
 
-## The core architecture claim
+## Abstract
 
-A lot of AI discourse mixes layers together. This project separates them clearly:
+Intent Compression Architecture (ICA) is a **pre-generation control layer** for LLM systems.
+Its job is to decide whether ambiguity should be resolved before the model commits to an answer.
 
-1. **Humans provide intent**
-2. **Agent orchestration should be deterministic where possible** (what marketing often calls an "agent")
-3. **The model is probabilistic inference**
+The key claim is simple:
 
-In short:
+> **Ask a clarifying question only when the expected improvement in answer quality or safety exceeds the cost of another turn.**
 
-- **Agents are orchestration code**
-- **Orchestration should be deterministic where possible**
+That framing turns clarification from a vague conversational instinct into an engineering policy.
+ICA is therefore not "ask more questions."
+It is a routing, scoring, and control problem that sits between user input and final generation.
+
+---
+
+## Problem statement
+
+A common failure mode in AI conversations is **unresolved ambiguity**.
+
+Users often ask questions that admit multiple plausible interpretations.
+Many systems are optimized to answer immediately, even when the intended meaning is still uncertain.
+The result is a familiar pattern:
+
+1. the model guesses
+2. the answer broadens to cover multiple interpretations
+3. the user corrects the guess
+4. the model regenerates
+
+That loop wastes tokens, increases latency, weakens precision, and makes the product feel less reliable than it should.
+
+ICA is designed to break that loop.
+
+---
+
+## What ICA is
+
+ICA is best understood as a **clarification-first control layer** that sits in front of answer generation.
+
+It performs four jobs:
+
+1. infer likely intent hypotheses
+2. estimate ambiguity and risk
+3. decide whether clarification is worth the extra turn
+4. either answer directly, ask a clarifier, premise-check, or refuse/redirect
+
+In that framing:
+
+- **Humans provide intent**
+- **Agent orchestration should be deterministic where possible**
 - **Uncertainty should be isolated to model calls and external-system calls**
 
 So the stack is:
@@ -51,148 +86,131 @@ This is the foundation of ICA.
 
 ---
 
-## Why this matters
+## Why the name includes "compression"
 
-When users ask ambiguous questions, models tend to produce "cover-all-interpretations" responses.
-Those responses are often:
+The word **compression** should be taken literally, not metaphorically.
 
-- too long
-- too abstract
-- less useful
-- more expensive
+ICA treats ambiguity as entropy over possible user intents.
+Let \(I\) be the latent intent variable and \(x\) be the user query.
 
-Users then correct the model and the model regenerates another long response.
-That loop burns cost and time.
+Before clarification:
 
-ICA breaks that loop.
+\[
+H(I \mid x)
+\]
+
+After asking clarification \(q\) and observing reply \(r\):
+
+\[
+H(I \mid x, q, r)
+\]
+
+The value of a clarification is the expected reduction in intent entropy:
+
+\[
+IG(q) = H(I \mid x) - \mathbb{E}_{r \sim P(r \mid x, q)}[H(I \mid x, q, r)]
+\]
+
+So ICA **compresses the intent distribution before generation**.
+It narrows the model's uncertainty set before the answer is produced.
+
+That is the mathematical justification for the project name.
 
 ---
 
-## ICA in one sentence
+## Decision policy: ask vs answer
 
-**Intent Compression Architecture adds a clarification step that narrows meaning before final generation, but only when clarification is cheaper than guessing wrong.**
+### Minimal rule
 
-Without ICA:
+> Ask a clarifying question only when expected improvement in answer quality or safety exceeds the cost of another turn.
 
-\[
-P(\text{answer} \mid \text{question})
-\]
+### Expected-utility formulation
 
-With ICA:
+For each candidate clarification question \(q\), define:
 
 \[
-P(\text{answer} \mid \text{question}, \text{confirmed intent})
-\]
-
-The model no longer has to guess which interpretation the user meant.
-
----
-
-## ICA is a decision policy, not just a UX preference
-
-The weak version of this idea is:
-
-> "Ask clarifying questions more often."
-
-The stronger and more implementable version is:
-
-> **Ask only when the expected reduction in error is greater than the cost of the extra turn.**
-
-That turns ICA from a conversational instinct into an engineering policy.
-
-In practice, the system is choosing between two actions:
-
-1. answer now
-2. ask a clarifying question, then answer
-
-So ICA should be framed as an optimization problem:
-
-\[
-\text{Choose ask if } \mathbb{E}[\Delta \text{error}] > \text{cost of clarification}
-\]
-
-Where clarification cost includes:
-
-- extra tokens
-- extra latency
-- possible user friction
-
-This is the missing bridge between a good product intuition and a deployable system design.
-
----
-
-## Decision rule: when should the model ask vs answer?
-
-> **Minimal rule:** ask a clarifying question only when expected improvement in answer quality or safety exceeds the cost of another turn.
-
-For an input query \(x\), let the system estimate:
-
-- the plausible intent distribution \(P(i \mid x)\)
-- the expected loss of answering immediately
-- the expected loss after asking a candidate clarification
-
-A practical rule is:
-
-\[
-\text{Ask if } \mathbb{E}[L(\text{answer}\mid x)] - \min_q \mathbb{E}[L(\text{answer}\mid x, r_q)] > C(q)
+U(q \mid x) =
+\mathbb{E}_{r \sim P(r \mid x, q)}
+\big[
+L_{\text{direct}}(x) - L_{\text{after}}(x, q, r)
+\big]
+- C(q)
 \]
 
 Where:
 
-- \(L\) is answer-quality or safety loss
-- \(q\) is a candidate clarification question
-- \(r_q\) is the user's reply to that question
-- \(C(q)\) is the cost of asking it
+- \(x\) is the user query
+- \(r\) is the user's possible reply to clarification \(q\)
+- \(L_{\text{direct}}(x)\) is the expected loss from answering immediately
+- \(L_{\text{after}}(x, q, r)\) is the expected loss after receiving reply \(r\)
+- \(C(q)\) is the cost of asking the question
 
-Plain English version:
+The routing rule becomes:
 
-> Ask only if the best available clarification is expected to improve the final answer enough to justify the extra turn.
+\[
+\text{Ask iff } \max_q U(q \mid x) > \tau
+\]
 
-This prevents the system from becoming annoying.
-It also prevents the opposite failure mode, where the model confidently answers low-clarity prompts that should have been narrowed first.
+Where \(\tau\) is a domain-specific threshold.
+
+Plain English:
+
+> Ask the clarification question with the highest expected utility, but only if its expected gain clears a threshold.
+
+That threshold is important.
+It lets the same architecture behave differently across domains:
+
+- coding tools can tolerate one short clarifier to avoid a long wrong answer
+- medical or legal systems can set a higher penalty on error and a lower tolerance for unsafe direct answers
+- high-volume customer support systems can weight latency more heavily
 
 ---
 
-## Cost function: tokens, latency and accuracy
+## Cost function
 
-The key tradeoff is not "more questions = better."
-The real tradeoff is:
-
-- **accuracy gain** from reduced ambiguity
-- versus
-- **interaction cost** from one more turn
+Clarification is not free, but neither is guessing.
 
 One simple objective is:
 
 \[
-L = \alpha \cdot \text{error} + \beta \cdot \text{tokens} + \gamma \cdot \text{latency} + \delta \cdot \text{user friction}
+L = \alpha \cdot \text{error}
+  + \beta \cdot \text{tokens}
+  + \gamma \cdot \text{latency}
+  + \delta \cdot \text{user friction}
+  + \epsilon \cdot \text{safety risk}
 \]
 
-This lets different products tune ICA differently:
+This makes the tradeoff explicit:
 
-- a customer support system may weight latency highly
-- a legal or medical assistant may weight error much more heavily
-- a coding tool may tolerate one short clarifier if it avoids a long wrong answer
+- better accuracy and safer answers
+- versus
+- extra interaction cost
 
-The important point is that clarification is not free, but neither is guessing.
-ICA makes that tradeoff explicit instead of leaving it buried inside prompt wording.
+The value of ICA is not that it always asks.
+The value is that it decides when clarification is worth paying for.
 
 ---
 
-## Question selection strategy: ask the highest-value clarifier
+## Question selection strategy
 
 Not all clarifying questions are equally useful.
-If the system decides to ask, it should ask the question that collapses ambiguity most efficiently.
+If the system decides to ask, it should choose the question that most efficiently collapses the ambiguity space.
 
-That means choosing the question with the highest expected information gain per unit cost.
+Two equivalent views are useful:
+
+1. **Information-gain view**
 
 \[
-q^* = \arg\max_q \Big(\mathbb{E}[\Delta L \mid q] - C(q)\Big)
+q^* = \arg\max_q IG(q)
 \]
 
-Or, in more intuitive terms:
+2. **Utility view**
 
-> Choose the clarification that splits the ambiguity space most efficiently.
+\[
+q^* = \arg\max_q U(q \mid x)
+\]
+
+In practice, the utility view is stronger because it balances entropy reduction against real interaction cost.
 
 Good clarifiers:
 
@@ -200,62 +218,111 @@ Good clarifiers:
 - use neutral wording
 - avoid injecting assumptions
 - minimize token count and user effort
+- materially change the likely final answer
 
 Bad clarifiers:
 
-- ask for information that does not change the final answer
-- contain loaded framings
-- require long-form user explanations when a short disambiguation would work
+- ask for information that will not change the answer
+- present loaded or leading framings
+- require long explanations when a short disambiguation would suffice
+- confirm harmful intent when the safe response would not change anyway
 
 So the goal is not "ask a question."
 The goal is "ask the smallest question that meaningfully changes the answer."
 
 ---
 
-## The interaction pattern
+## Risk-aware routing policy
 
-### Standard pattern (today)
+ICA should reason over **both** meaning uncertainty and intent risk.
 
-1. User asks an underspecified question
-2. Model guesses intent and answers broadly
-3. User says "that's not what I meant"
-4. Model retries
-5. Repeat
+Some prompts are ambiguous but low risk.
+Some are semantically clear but high risk.
+A strong control layer should distinguish those cases explicitly.
 
-### ICA pattern
+| Ambiguity | Risk | Default action | Rationale |
+| --- | --- | --- | --- |
+| Low | Low | Answer directly | No clarification needed. |
+| High | Low | Ask one high-value clarifier | Reduce ambiguity before generation. |
+| Low | High | Direct safe completion, refuse/redirect, or premise-check if safe behavior can materially change | Do not confirm harmful intent unless confirmation changes the safe response. |
+| High | High | Strict clarification, constrained answering, or refuse/redirect | High uncertainty plus high downside requires tighter control. |
 
-1. User asks question
-2. System estimates ambiguity, answer risk and clarification cost
-3. If expected value is positive, ask one short clarifier
-4. User confirms intent
-5. Generate precise answer once
+Two important safety notes follow from this:
 
----
+1. **Clarification is not always the right response to risk.**
+Sometimes the best behavior is a direct safe completion or a refusal with a helpful redirect.
 
-## Example: plain and practical
-
-User asks:
-
-> "Is Elon Musk spreading right wing propaganda?"
-
-The keyword **"propaganda"** can mean different things.
-Different definitions produce different answers.
-
-ICA response:
-
-> "When you say propaganda, do you mean:\
-> A) persuasive political advocacy\
-> B) coordinated deceptive messaging\
-> C) something else?"
-
-User picks one definition.
-Then the model answers directly.
-
-No hedged essay. No philosophical drift. Just the requested answer.
+2. **The system should not ask the user to confirm harmful intent when confirmation would not change the safe response.**
+In those cases, refusal or redirection is cleaner and safer.
 
 ---
 
-## Why this is also a coding/agent design issue
+## System architecture
+
+![ICA architecture](diagrams/architecture.png)
+
+The updated diagram reflects the current architecture claim:
+
+- intent hypotheses are generated first
+- ambiguity and risk are scored jointly
+- an expected-utility gate decides whether to answer, clarify, premise-check, or refuse/redirect
+- the final answer is conditioned on either the direct route or a narrowed intent state
+
+The legend is embedded directly in the figure so the diagram remains understandable when reused outside the README.
+
+---
+
+## Implementation contract
+
+To make ICA directly buildable, the control layer should emit a structured decision object rather than a free-form paragraph.
+
+Schema:
+
+- [`spec/clarifier_output.schema.json`](spec/clarifier_output.schema.json)
+
+Reference example:
+
+- [`spec/clarifier_output.example.json`](spec/clarifier_output.example.json)
+
+Illustrative payload:
+
+```json
+{
+  "ambiguity_score": 0.74,
+  "risk_score": 0.22,
+  "intent_entropy_bits": 1.41,
+  "intent_hypotheses": [
+    {
+      "label": "persuasive political advocacy",
+      "probability": 0.46,
+      "answer_delta_if_true": "high"
+    },
+    {
+      "label": "coordinated deceptive messaging",
+      "probability": 0.39,
+      "answer_delta_if_true": "high"
+    },
+    {
+      "label": "other",
+      "probability": 0.15,
+      "answer_delta_if_true": "medium"
+    }
+  ],
+  "decision": "ask_clarifier",
+  "clarifying_question": "When you say propaganda, do you mean persuasive political advocacy, coordinated deceptive messaging, or something else?",
+  "answer_constraints": [
+    "avoid loaded framing",
+    "define terms before conclusion"
+  ]
+}
+```
+
+This is a small addition, but it matters.
+It turns ICA from a conceptual recommendation into a concrete orchestration contract.
+
+---
+
+## Why this is also a software architecture issue
 
 This repo treats "agents" as software systems, not mystical entities.
 
@@ -264,26 +331,31 @@ An agent loop is usually ordinary program logic:
 ```python
 while not done:
     state = read_state()
-    step = policy(state)          # deterministic control logic
+    step = policy(state)          # deterministic control logic where possible
     result = call_model_or_tool(step)
     update_state(result)
 ```
 
-In a well-designed system, the orchestration should be deterministic where possible.
-Real agent systems still contain nondeterministic dependencies, including model sampling, retrieval ranking, external API state, timeouts and race conditions.
+In a well-designed system, orchestration should be deterministic where possible.
+Real agent systems still contain nondeterministic dependencies, including:
 
-So the more precise claim is not that every real system is fully deterministic.
-It is that uncertainty should be isolated to model and external-system calls, while the control logic remains explicit and testable.
+- model sampling
+- retrieval ranking
+- external API state
+- timeouts
+- race conditions
 
-So ICA is not about anthropomorphizing agents.
-It is about improving deterministic orchestration around probabilistic model calls.
+So the strong claim is not that every real system is fully deterministic.
+It is that uncertainty should be isolated to model and external-system calls while the control logic remains explicit, inspectable, and testable.
+
+ICA is therefore a deterministic orchestration improvement around probabilistic model calls.
 
 ---
 
-## Token and cost impact (illustrative example)
+## Illustrative token and latency impact
 
-The following numbers are illustrative rather than benchmarked.
-They show why selective clarification can reduce total token use.
+The following numbers are **illustrative rather than benchmarked**.
+They show why selective clarification can reduce total cost.
 
 Typical ambiguous loop:
 
@@ -301,300 +373,117 @@ ICA loop:
 - precise final answer: 500 tokens
 - **total: 750 tokens**
 
-That is a large reduction in compute and latency.
-At scale, this matters financially.
+At scale, that difference matters financially and operationally.
+
+In ambiguous cases, **better questions can beat bigger answers**.
 
 ---
 
-## Best next validation step: benchmark the claim
+## Evaluation package
 
-The token example above is persuasive, but it is still hypothetical.
-The next upgrade for this repo is a small benchmark showing the effect on real ambiguous prompts.
+The biggest remaining credibility jump is empirical support.
+This repo now includes a lightweight benchmark scaffold:
 
-A lightweight evaluation would be enough:
+- prompt set: [`examples/ambiguous_prompts.csv`](examples/ambiguous_prompts.csv)
+- protocol: [`eval/README.md`](eval/README.md)
+- reporting template: [`eval/sample_results.md`](eval/sample_results.md)
 
-1. collect 20 to 50 ambiguous prompts across a few domains
-2. run a direct-answer baseline
-3. run an ICA policy that clarifies only when expected value is positive
-4. compare output quality, safety and interaction cost
+The intended benchmark compares a direct-answer baseline against an ICA policy across 20 to 50 ambiguous prompts.
 
-Recommended measurements:
-
-- direct-answer tokens
-- clarification tokens
-- total tokens to resolved task
-- retry count
-- latency to correct answer
-- user-rated correctness
-- user-rated clarity
-- safety or premise-handling score where relevant
-
-A simple reporting table could look like this:
-
-| Metric | Direct answer baseline | ICA policy |
-| --- | --- | --- |
-| Total tokens per task |  |  |
-| Clarification tokens | 0 |  |
-| Retry count |  |  |
-| User-rated correctness |  |  |
-| User-rated clarity |  |  |
-| Safety/premise handling |  |  |
-
-If ICA improves correctness or safety while keeping total cost flat or lower, the argument becomes empirical rather than rhetorical.
-
----
-
-## Engineering principle behind ICA
-
-> **Resolve ambiguity before generation.**
-
-Operationally:
-
-1. infer competing intent hypotheses
-2. estimate direct-answer loss
-3. score candidate clarifiers by expected loss reduction minus cost
-4. ask only if one candidate has positive expected utility
-5. answer under the narrowed intent state
-
-This improves:
-
-- precision
-- reliability
-- token efficiency
-- developer/user trust
-
----
-
-## Clarification model training (critical addition)
-
-In this design, the clarification component is **not** a static prompt hack.
-It is trained before deployment on clarification-specific data (ambiguous queries, high-quality clarifying questions and accepted user intent resolutions).
-
-That matters because a trained clarifier can:
-
-- detect ambiguity more accurately than simple heuristics
-- ask shorter, more neutral clarification questions
-- reduce framing bias in multi-choice options
-- improve over time from real interaction logs
-
-So ICA becomes more than a workflow pattern.
-It becomes a **self-improving intent-resolution layer** in front of generation.
-
----
-
-## Why this makes the proposal much stronger
-
-Adding a trained clarification model plus an explicit ask-vs-answer policy upgrades ICA from "good orchestration" to a stronger truth-seeking stack component:
-
-1. **Better conditioning quality**
-   - Final answers are conditioned on cleaner, user-confirmed intent.
-   - This directly reduces hallucination surface area caused by ambiguous wording.
-
-2. **Less bias at the point of disambiguation**
-   - The first question in a pipeline strongly shapes everything that follows.
-   - Training for neutrality and open-ended disambiguation lowers the risk of steering users into a loaded framing.
-
-3. **Higher UX precision with lower friction**
-   - A specialized small model can trigger clarification only when needed, cutting both over-clarification and wrong first answers.
-
-4. **Compounding performance gains over time**
-   - Logged traces (`query -> clarification -> user selection -> outcome`) create a feedback loop.
-   - The clarifier gets better without needing to retrain the full answering model.
-
-5. **More useful compute allocation**
-   - Tokens saved by early intent resolution can be reallocated to better retrieval, verification, or multi-hypothesis reasoning in later steps.
-
-6. **A policy engineers can actually implement**
-   - The repository now specifies a decision rule, a cost function and a question-selection strategy.
-   - That makes ICA legible as a system design, not just a conversational preference.
-
-In short: training the clarifier first turns ICA into a practical, measurable and continuously improvable reliability mechanism rather than a one-off prompt strategy.
-
----
-
-## Relationship to current AI product behavior
-
-Many systems optimize for immediate "helpful" responses, which often means broad responses.
-That behavior is good for conversational feel, but bad for technical precision.
-
-ICA argues for a better default in ambiguous cases:
-
-- fewer assumptions
-- more boundary checks
-- narrower funnels
-
-Or simply:
-
-> **Better questions beat bigger models.**
-
----
-
-## Minimal implementation sketch
-
-```python
-def respond(query, context):
-    intents = infer_intent_hypotheses(query, context)
-    direct_loss = expected_answer_loss(query, context, intents)
-
-    candidate_questions = build_candidate_clarifiers(query, context, intents)
-    best_question = None
-    best_gain = 0.0
-
-    for question in candidate_questions:
-        clarified_loss = expected_loss_after_reply(
-            query, context, intents, question
-        )
-        gain = direct_loss - clarified_loss - clarification_cost(question)
-
-        if gain > best_gain:
-            best_gain = gain
-            best_question = question
-
-    if best_question is None:
-        return answer(query, context)
-
-    user_reply = get_user_reply(best_question)
-    confirmed_intent = resolve_intent(user_reply, intents)
-    return answer(query, context, intent=confirmed_intent)
-```
-
-This requires orchestration and policy tuning more than new model architecture.
-
-The important point is that the system now evaluates:
-
-- whether to ask
-- which question to ask
-- whether the expected improvement outweighs the extra turn
-
----
-
-## Evaluation metrics
-
-ICA can be tested with simple measurable metrics:
+Primary outcome metrics:
 
 - total tokens per resolved task
 - clarification rate
-- clarification hit rate (how often the clarification materially changed the outcome)
-- first pass task success
+- clarification hit rate
 - retry count / loop depth
 - latency to correct answer
-- user rated precision
+- user-rated correctness
+- user-rated clarity
+- safety or premise-handling quality
 - net utility versus an always-answer baseline
 
-The goal is practical: better outcomes with less wasted generation.
+Counter-metrics:
+
+- over-clarification rate
+- unnecessary clarification rate
+- user abandonment after clarification
+- false direct-answer rate
+- false refusal / over-safety rate
+- clarification bias score
+- percentage of clarifiers that changed the final answer
+
+Those counter-metrics matter because ICA can fail in both directions:
+
+- it can ask too often and annoy users
+- it can ask too rarely and let ambiguity damage the answer
 
 ---
 
-## Risks and guardrails
+## Training and data recommendations
 
-Risks:
+The clarification component should be trained on clarification-specific traces, not treated as a static prompt trick.
 
-- too many clarifying questions
-- unnecessary latency
-- accepting user false premises without challenge
-- mis-estimating the gain from clarification
+Useful training data includes:
 
-Guardrails:
-
-- ambiguity thresholds tuned by domain
-- ask only when expected gain clears a minimum threshold
-- concise, multiple-choice clarifiers where possible
-- premise-aware checks before final answer
-
----
-
-## Why ICA helps against alignment-gaming prompts
-
-ICA is not only an efficiency pattern.
-It also acts as a practical safety and truthfulness layer against adversarial prompt framing.
-
-Some modern failure cases follow the same pattern:
-
-1. User wraps harmful intent in a format that sounds like normal interaction ("roast", "hypothetical", "just yes/no")
-2. Model over-prioritizes compliance with surface wording
-3. Output becomes abusive, misleading, or socially harmful
-
-ICA interrupts this flow before final generation.
-
-### Case pattern A: "roast" prompts about real tragedies
-
-Prompts that ask for vulgar attacks tied to real disasters or deaths are often not ambiguous semantically, but **high risk in intent**.
-
-A clarifier should detect this and ask for safe disambiguation:
-
-> "This references real tragedies and deceased people. Do you want:\
-> A) fictional satire with no real victims\
-> B) factual discussion of events\
-> C) something else?"
-
-This does three things:
-
-- exposes bad faith intent early
-- redirects users toward factual or non-harmful modes
-- reduces chances of generating defamatory or exploitative content
-
-### Case pattern B: false-binary culture-war hypotheticals
-
-Prompts like "Would you do X offensive act to stop nuclear war? yes/no" are often adversarial traps.
-They force a model into a false dilemma that is disconnected from real causality.
-
-A premise-aware clarifier can respond:
-
-> "I cannot influence whether nuclear war occurs, but I can cause direct offense by doing X.\
-> Do you still want me to do X knowing it will not prevent war?"
-
-This strips out the manipulative premise and forces explicit user intent.
-
----
-
-## Clarifier training recommendations (practical)
-
-To make ICA robust in production, train the clarification policy on more than generic ambiguity data.
-
-Include:
-
-- adversarial prompt variants (jailbreak style wording)
-- post incident correction logs
+- ambiguous real-world queries
+- high-quality human clarifying questions
+- accepted user intent resolutions
+- adversarial prompt variants
+- post-incident correction logs
 - examples of false binaries and impossible premises
-- prompts mixing real people, tragedy references and requests for abuse
+- prompts mixing real people, tragedy references, and requests for abuse
 
-Useful model outputs for the clarifier stage:
+Useful model outputs at the control-layer stage include:
 
 - ambiguity score
 - risk score
-- risk type labels (e.g., defamation risk, identity targeted abuse risk, historical misinformation risk)
-- suggested minimal clarifying question
+- risk type labels
+- intent hypotheses with probabilities
+- candidate clarifiers with expected utilities
+- recommended answer constraints
 
-Routing rule of thumb:
-
-- low ambiguity + low risk -> answer directly
-- high ambiguity + low risk -> ask one clarifier
-- low ambiguity + high risk -> ask premise/risk clarifier or refuse/redirect
-- high ambiguity + high risk -> strict clarification + constrained answer mode
+That is what turns ICA into a self-improving control layer rather than a one-off workflow trick.
 
 ---
 
-## Implementation note: ambiguity-only is not enough
+## Safety and refusal behavior
 
-A strong ICA implementation should evaluate both:
+ICA is not only an efficiency pattern.
+It is also a safety and truthfulness layer against adversarial or manipulative prompt framing.
 
-- **meaning uncertainty** (what did the user mean?)
-- **intent risk** (what harm could this request cause if followed literally?)
+However, the safe behavior is not always "ask a clarifying question."
 
-That combined gate keeps the system useful for normal users while making it harder to exploit for viral "gotcha" outputs.
+For example, when a prompt is low ambiguity but clearly high risk, the right response may be:
+
+- a direct refusal
+- a safe redirect
+- a premise-check that strips out a false causal framing
+
+Safer example:
+
+> "I can't help with abusive or exploitative content about real tragedies. If you'd like, I can help with a factual summary, a fictional satire with no real victims, or a discussion of why the framing is harmful."
+
+This is better than asking the user to reconfirm harmful intent when the safe response would not change.
+
+---
+
+## Repository status
+
+The README, architecture diagram, proposal DOCX, and proposal PDF in this repository are intended to describe the **same architecture revision**.
+If one artifact is updated, the others should be regenerated to keep the package aligned.
 
 ---
 
 ## Final takeaway
 
-ICA is not a new mystical theory of intelligence.
-It is a software architecture pattern:
+ICA is not a mystical theory of intelligence.
+It is a practical control-layer pattern for LLM systems:
 
-- keep orchestration deterministic where possible
-- treat model outputs as probabilistic
-- isolate uncertainty to model and external-system calls
-- ask clarifying questions only when ambiguity is material and the expected gain is positive
-- choose the clarifier that narrows the ambiguity space most efficiently
-- generate the final answer only after intent is constrained
+- model ambiguity as uncertainty over intent
+- compress that uncertainty before generation when clarification is worth the cost
+- isolate uncertainty to model and external-system calls while keeping orchestration explicit
+- choose the highest-utility clarifier rather than asking by default
+- treat ambiguity and risk as separate but jointly relevant signals
+- refuse or redirect directly when clarification would not improve the safe response
 
-If we do that, we get responses that are shorter, clearer, cheaper, and more useful.
+If we do that well, we get systems that are more precise, more reliable, more defensible, and often cheaper to run.
