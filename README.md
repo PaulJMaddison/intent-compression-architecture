@@ -26,23 +26,23 @@ If a question has more than one valid meaning, the system should ask a short cla
 A lot of AI discourse mixes layers together. This project separates them clearly:
 
 1. **Humans provide intent**
-2. **Code is deterministic orchestration** (what marketing often calls an "agent")
+2. **Agent orchestration should be deterministic where possible** (what marketing often calls an "agent")
 3. **The model is probabilistic inference**
 
 In short:
 
-- **Agents are code**
-- **Code is deterministic**
-- **Models are probabilistic**
+- **Agents are orchestration code**
+- **Orchestration should be deterministic where possible**
+- **Uncertainty should be isolated to model calls and external-system calls**
 
 So the stack is:
 
-Human intent  
-↓  
-Deterministic software  
-↓  
-Probabilistic model  
-↓  
+Human intent<br>
+↓<br>
+Deterministic software where possible<br>
+↓<br>
+Probabilistic model<br>
+↓<br>
 Tool/API/database execution
 
 This is the foundation of ICA.
@@ -121,6 +121,8 @@ This is the missing bridge between a good product intuition and a deployable sys
 
 ## Decision rule: when should the model ask vs answer?
 
+> **Minimal rule:** ask a clarifying question only when expected improvement in answer quality or safety exceeds the cost of another turn.
+
 For an input query \(x\), let the system estimate:
 
 - the plausible intent distribution \(P(i \mid x)\)
@@ -135,14 +137,14 @@ A practical rule is:
 
 Where:
 
-- \(L\) is answer loss
+- \(L\) is answer-quality or safety loss
 - \(q\) is a candidate clarification question
 - \(r_q\) is the user's reply to that question
 - \(C(q)\) is the cost of asking it
 
 Plain English version:
 
-> Ask only if the best available clarification is expected to improve the final answer more than it costs.
+> Ask only if the best available clarification is expected to improve the final answer enough to justify the extra turn.
 
 This prevents the system from becoming annoying.
 It also prevents the opposite failure mode, where the model confidently answers low-clarity prompts that should have been narrowed first.
@@ -265,17 +267,21 @@ while not done:
     update_state(result)
 ```
 
-The orchestration is deterministic.
-Any randomness usually comes from dependencies (for example model sampling or external APIs), not from the existence of an "agent" as a new computational type.
+In a well-designed system, the orchestration should be deterministic where possible.
+Real agent systems still contain nondeterministic dependencies, including model sampling, retrieval ranking, external API state, timeouts and race conditions.
+
+So the more precise claim is not that every real system is fully deterministic.
+It is that uncertainty should be isolated to model and external-system calls, while the control logic remains explicit and testable.
 
 So ICA is not about anthropomorphizing agents.
 It is about improving deterministic orchestration around probabilistic model calls.
 
 ---
 
-## Token and cost impact
+## Token and cost impact (illustrative example)
 
-Selective clarification often reduces total token use.
+The following numbers are illustrative rather than benchmarked.
+They show why selective clarification can reduce total token use.
 
 Typical ambiguous loop:
 
@@ -295,6 +301,44 @@ ICA loop:
 
 That is a large reduction in compute and latency.
 At scale, this matters financially.
+
+---
+
+## Best next validation step: benchmark the claim
+
+The token example above is persuasive, but it is still hypothetical.
+The next upgrade for this repo is a small benchmark showing the effect on real ambiguous prompts.
+
+A lightweight evaluation would be enough:
+
+1. collect 20 to 50 ambiguous prompts across a few domains
+2. run a direct-answer baseline
+3. run an ICA policy that clarifies only when expected value is positive
+4. compare output quality, safety and interaction cost
+
+Recommended measurements:
+
+- direct-answer tokens
+- clarification tokens
+- total tokens to resolved task
+- retry count
+- latency to correct answer
+- user-rated correctness
+- user-rated clarity
+- safety or premise-handling score where relevant
+
+A simple reporting table could look like this:
+
+| Metric | Direct answer baseline | ICA policy |
+| --- | --- | --- |
+| Total tokens per task |  |  |
+| Clarification tokens | 0 |  |
+| Retry count |  |  |
+| User-rated correctness |  |  |
+| User-rated clarity |  |  |
+| Safety/premise handling |  |  |
+
+If ICA improves correctness or safety while keeping total cost flat or lower, the argument becomes empirical rather than rhetorical.
 
 ---
 
@@ -544,8 +588,9 @@ That combined gate keeps the system useful for normal users while making it hard
 ICA is not a new mystical theory of intelligence.
 It is a software architecture pattern:
 
-- keep deterministic orchestration explicit
+- keep orchestration deterministic where possible
 - treat model outputs as probabilistic
+- isolate uncertainty to model and external-system calls
 - ask clarifying questions only when ambiguity is material and the expected gain is positive
 - choose the clarifier that narrows the ambiguity space most efficiently
 - generate the final answer only after intent is constrained
