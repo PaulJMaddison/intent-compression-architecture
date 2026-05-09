@@ -334,9 +334,7 @@ This check can be run locally:
 python -m jsonschema spec/clarifier_output.schema.json -i spec/clarifier_output.example.json
 ```
 
-A GitHub Actions workflow is included in
-[`.github/workflows/validate-clarifier-schema.yml`](.github/workflows/validate-clarifier-schema.yml) as an
-optional CI template, but local validation is the canonical reproducibility path.
+Local validation is the canonical reproducibility path for this repository.
 
 Illustrative payload:
 

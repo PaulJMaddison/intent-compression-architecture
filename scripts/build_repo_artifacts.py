@@ -544,7 +544,7 @@ def build_docx(diagram_path: Path) -> Path:
         "The control layer should emit a structured decision object rather than a free-form paragraph. This proposal includes a JSON schema and reference example in spec/clarifier_output.schema.json and spec/clarifier_output.example.json."
     )
     document.add_paragraph(
-        "The repository also includes a lightweight schema validation path so the example can be tested against the contract rather than presented as a static mockup. Local validation is the canonical reproducibility path; the workflow file is only an optional CI template."
+        "The repository also includes a lightweight schema validation path so the example can be tested against the contract rather than presented as a static mockup. Local validation is the canonical reproducibility path."
     )
     code = document.add_paragraph()
     code.style = document.styles["Normal"]
