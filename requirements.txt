@@ -1,3 +1,5 @@
+# Intentionally loose dependency set for quick setup.
+# Use requirements.lock for the pinned versions used in the current reproducibility path.
 pandas
 tiktoken
 jsonschema

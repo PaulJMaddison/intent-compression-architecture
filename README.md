@@ -23,6 +23,19 @@
 
 ---
 
+## Quick start
+
+```bash
+python -m pip install -r requirements.txt
+python -m jsonschema spec/clarifier_output.schema.json -i spec/clarifier_output.example.json
+python eval/build_pilot_report.py
+```
+
+For a more exact replay of the currently documented environment, use `requirements.lock` instead of
+`requirements.txt`.
+
+---
+
 ## Abstract
 
 Intent Compression Architecture (ICA) is a **pre-generation control layer** for LLM systems.
@@ -512,6 +525,9 @@ Those counter-metrics matter because ICA can fail in both directions:
 - it can ask too often and annoy users
 - it can ask too rarely and let ambiguity damage the answer
 
+The next serious empirical step is still a **multi-rater or API-instrumented benchmark** with independent
+scoring, billed token capture, and real latency measurement.
+
 ---
 
 ## How to reproduce the pilot
@@ -520,6 +536,12 @@ Those counter-metrics matter because ICA can fail in both directions:
 
 ```bash
 python -m pip install -r requirements.txt
+```
+
+For a more exact rerun of the currently documented package set:
+
+```bash
+python -m pip install -r requirements.lock
 ```
 
 2. Validate the clarifier contract:

@@ -50,6 +50,12 @@ Recommended install command:
 python -m pip install -r requirements.txt
 ```
 
+For a pinned replay of the currently documented dependency set:
+
+```bash
+python -m pip install -r requirements.lock
+```
+
 Minimal validation command:
 
 ```bash
@@ -57,6 +63,7 @@ python -m jsonschema spec/clarifier_output.schema.json -i spec/clarifier_output.
 ```
 
 The published pilot is designed to test ambiguous-prompt handling, not to estimate production-wide clarification frequency.
+The next serious empirical upgrade remains a multi-rater or API-instrumented benchmark with actual billed-token and latency capture.
 
 ---
 
