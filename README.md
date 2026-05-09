@@ -381,6 +381,49 @@ In ambiguous cases, **better questions can beat bigger answers**.
 
 ---
 
+## Hidden baseline cost: correction funnels and silent failure
+
+A low-token first answer is not necessarily an efficient answer.
+
+In ambiguous prompts, the baseline model often chooses one interpretation implicitly and answers under that interpretation.
+If the user meant something else, the conversation can enter a **correction funnel**:
+
+1. the model answers the wrong version of the question
+2. the user challenges the answer
+3. the model defends or qualifies its interpretation
+4. only later does the real issue become explicit: a load-bearing term was never defined
+
+This is not just a retry problem.
+It is a **wrong-funnel problem**.
+
+Example pattern:
+
+1. user asks: "Does Elon Musk post right-wing propaganda?"
+2. model answers under one narrow definition of "propaganda"
+3. user argues from a different definition
+4. several turns later, the system finally reveals the real issue: the term "propaganda" was carrying multiple meanings
+
+ICA moves that discovery to the front.
+It exposes the load-bearing ambiguity before the system commits to an answer.
+
+This matters because many users will not litigate the answer into correctness.
+There are two baseline failure modes:
+
+1. **Correction funnel**
+The user pushes back, burns time and tokens, and eventually forces the model to discover the ambiguity.
+
+2. **Silent failure**
+The user does not push back, accepts or abandons the answer, and never learns that the answer depended on an undefined term.
+
+So ICA should not be evaluated only on first-pass output tokens.
+It should be evaluated on **tokens per resolved intent**:
+
+`total cost = first answer + repair turns + user correction burden + silent-failure risk`
+
+A short wrong answer is not cheaper than a short clarifying question if the answer sends the user down the wrong semantic funnel.
+
+---
+
 ## Evaluation package
 
 The biggest remaining credibility jump is empirical support.
@@ -394,9 +437,23 @@ This repo now includes a lightweight benchmark scaffold:
 
 The intended benchmark compares a direct-answer baseline against an ICA policy across 20 to 50 ambiguous prompts.
 
+In practice, the more meaningful comparison is:
+
+1. **Direct one-shot**
+   - answer immediately and stop the measurement after the first assistant response
+2. **Direct with repair funnel**
+   - answer immediately, then include the cost of the user's correction and the eventual repair path
+3. **ICA clarify-first**
+   - ask the highest-value clarifier before the main answer when expected utility is positive
+
+For ambiguous prompts, the second and third comparisons are the ones that matter most.
+The first can make a wrong answer look artificially cheap simply because the measurement stops before the intent is actually resolved.
+
 Primary outcome metrics:
 
+- first assistant-message tokens
 - total tokens per resolved task
+- tokens per resolved intent
 - clarification rate
 - clarification hit rate
 - retry count / loop depth
@@ -405,6 +462,9 @@ Primary outcome metrics:
 - user-rated clarity
 - safety or premise-handling quality
 - net utility versus an always-answer baseline
+- definition-discovery turn
+- correction-funnel depth
+- user correction burden
 
 Counter-metrics:
 
@@ -415,6 +475,9 @@ Counter-metrics:
 - false refusal / over-safety rate
 - clarification bias score
 - percentage of clarifiers that changed the final answer
+- false-confidence rate
+- silent-failure proxy
+- percentage of ambiguous answers where the user never learns what term caused the mismatch
 
 Those counter-metrics matter because ICA can fail in both directions:
 
@@ -446,7 +509,95 @@ Useful model outputs at the control-layer stage include:
 - candidate clarifiers with expected utilities
 - recommended answer constraints
 
+This is not just classic RLHF on final answers.
+ICA creates a second, unusually valuable training signal:
+
+- the user query was ambiguous
+- the system proposed an interpretation split
+- the user selected, corrected, ignored, or refined that split
+- the final outcome shows whether the clarification was actually useful
+
+That enables a layered training stack:
+
+1. **Supervised training**
+Train on ambiguous prompts and strong clarifying questions.
+
+2. **Preference training / RLHF**
+Prefer clarifiers that raters and users judge as neutral, short, informative, and non-leading.
+
+3. **Outcome-based reward modeling**
+Reward clarifiers that reduce retries, correction funnels, user abandonment, and unsafe outputs.
+
+4. **Online experimentation**
+Test thresholds, option counts, and clarifier styles on small traffic slices.
+
+5. **Distillation**
+Fold successful clarification behavior into smaller routing models and future base models.
+
 That is what turns ICA into a self-improving control layer rather than a one-off workflow trick.
+
+---
+
+## Strategic implication: the clarification data flywheel
+
+At large scale, ICA is not only a reliability pattern.
+It becomes a **data flywheel**.
+
+Every clarification interaction can produce a structured trace:
+
+`ambiguous query -> candidate intents -> clarifying question -> user reply -> resolved intent -> final outcome`
+
+That trace is more valuable than an ordinary chat log because it captures the missing hidden variable in many failed AI interactions:
+
+> **what the user actually meant**
+
+This matters strategically because the architecture itself is copyable.
+The harder-to-copy advantage is the volume and diversity of real-world intent-resolution data.
+
+OpenAI has publicly said ChatGPT has **more than 900 million weekly active users** and **more than 50 million consumer subscribers** in its 2026 post [Scaling AI for everyone](https://openai.com/index/scaling-ai-for-everyone/).
+OpenAI has also published a privacy-preserving usage study based on **1.5 million conversations** in the context of **700 million weekly active users** in [How people are using ChatGPT](https://openai.com/index/how-people-are-using-chatgpt/).
+
+OpenAI also says:
+
+- consumer ChatGPT conversations can help improve models unless the user opts out in data controls, as described in [How ChatGPT learns about the world while protecting privacy](https://openai.com/index/how-chatgpt-protects-privacy/) and the Help Center article [What if I want to keep my history on but disable model training?](https://help.openai.com/en/articles/8983130-what-if-i-want-to-keep-my-history-on-but-disable-model-training%23.class)
+- business and API inputs and outputs are **not used for training by default**, as described in [Business data privacy, security, and compliance](https://openai.com/business-data/)
+
+So the strongest competitive argument is not:
+
+- "ask more clarifying questions"
+
+It is:
+
+- market share can be converted into structured intent labels
+- structured intent labels can train better ask-vs-answer policies
+- better policies improve answer quality, safety, and trust
+- improved trust and usefulness drive more usage
+- more usage generates more clarification data
+
+That is a clarification data flywheel.
+
+The copyable layer includes:
+
+- the architecture diagram
+- the prompt pattern
+- the idea of ambiguity scoring
+- the UX flow
+
+The harder-to-copy layer includes:
+
+- real ambiguity distributions across domains and cultures
+- user-selected intent labels
+- live correction-funnel traces
+- neutral clarifier outcome data
+- calibrated thresholds for when not to ask
+- multilingual edge cases and adversarial prompt patterns
+
+So the defensible moat claim is:
+
+> Competitors can copy the visible behavior of asking clarifying questions, but without comparable live usage volume they may struggle to match the trained clarification policy, ambiguity coverage, and intent-resolution feedback loop.
+
+In that sense, ICA could turn market share into model-quality advantage.
+Not just by having more conversations, but by converting ambiguous conversations into structured training data.
 
 ---
 
@@ -487,7 +638,10 @@ It is a practical control-layer pattern for LLM systems:
 - compress that uncertainty before generation when clarification is worth the cost
 - isolate uncertainty to model and external-system calls while keeping orchestration explicit
 - choose the highest-utility clarifier rather than asking by default
+- measure cost at the level of resolved intent, not just the first assistant response
+- prevent wrong-funnel conversations and silent failures, not just visible retries
 - treat ambiguity and risk as separate but jointly relevant signals
 - refuse or redirect directly when clarification would not improve the safe response
+- use clarification traces to improve the control layer over time
 
 If we do that well, we get systems that are more precise, more reliable, more defensible, and often cheaper to run.

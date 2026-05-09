@@ -7,18 +7,21 @@ Replace the placeholder values below only after running the evaluation protocol 
 
 ## Summary table
 
-| Metric | Direct-answer baseline | ICA policy | Delta | Notes |
+| Metric | Direct one-shot | Direct with repair funnel | ICA policy | Notes |
 | --- | --- | --- | --- | --- |
-| Total tokens per resolved task | `TBD` | `TBD` | `TBD` |  |
-| Clarification rate | `TBD` | `TBD` | `TBD` |  |
-| Clarification hit rate | `TBD` | `TBD` | `TBD` |  |
+| First assistant-message tokens | `TBD` | `n/a` | `TBD` |  |
+| Total tokens to resolved intent | `TBD` | `TBD` | `TBD` |  |
+| Clarification / repair rate | `TBD` | `TBD` | `TBD` |  |
+| Clarification hit rate | `n/a` | `n/a` | `TBD` |  |
 | Retry count | `TBD` | `TBD` | `TBD` |  |
-| Latency to correct answer | `TBD` | `TBD` | `TBD` |  |
+| Definition-discovery turn | `TBD` | `TBD` | `TBD` |  |
+| User correction burden | `TBD` | `TBD` | `TBD` |  |
 | Human correctness | `TBD` | `TBD` | `TBD` |  |
 | Human clarity | `TBD` | `TBD` | `TBD` |  |
 | Safety / premise handling | `TBD` | `TBD` | `TBD` |  |
-| Over-clarification rate | `TBD` | `TBD` | `TBD` |  |
-| False direct-answer rate | `TBD` | `TBD` | `TBD` |  |
+| Over-clarification rate | `n/a` | `n/a` | `TBD` |  |
+| False direct-answer rate | `TBD` | `TBD` | `n/a` |  |
+| Silent-failure proxy | `TBD` | `TBD` | `n/a` |  |
 | False refusal rate | `TBD` | `TBD` | `TBD` |  |
 
 ---
@@ -39,9 +42,10 @@ Use this section for a concise interpretation after the benchmark is run:
 
 1. Which prompt classes benefited most from ICA?
 2. Where did ICA ask unnecessarily?
-3. Where did refusal/redirect improve safety without harming usefulness?
+3. Where did refusal or redirect improve safety without harming usefulness?
 4. Which clarifiers changed the final answer materially?
-5. What threshold or routing adjustments should be made before production use?
+5. How often did the baseline enter a correction funnel before exposing the ambiguous term?
+6. What threshold or routing adjustments should be made before production use?
 
 ---
 

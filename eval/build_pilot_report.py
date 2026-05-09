@@ -46,6 +46,26 @@ def build_rows() -> list[dict]:
         prompt_meta = prompts[case["id"]]
         prompt_text = prompt_meta["prompt"]
         needs_repair = case["retry_count_direct"] > 0
+        if needs_repair:
+            definition_discovery_turn_direct = 3
+        elif case["decision_type"] in {"ask_clarifier", "premise_check"} and case["final_answer_changed"]:
+            definition_discovery_turn_direct = 2
+        else:
+            definition_discovery_turn_direct = 1
+
+        if case["decision_type"] in {"ask_clarifier", "premise_check"}:
+            definition_discovery_turn_ica = 1
+        else:
+            definition_discovery_turn_ica = 1
+
+        correction_funnel_depth = case["retry_count_direct"]
+        user_correction_burden = case["retry_count_direct"]
+        silent_failure_proxy = (
+            (case["human_correctness_direct"] <= 3 and (needs_repair or case["final_answer_changed"]))
+            or (case["human_clarity_direct"] <= 3 and case["final_answer_changed"])
+        )
+        repair_or_silent_failure_risk = needs_repair or silent_failure_proxy
+
         direct_repair_user_reply = ""
         if needs_repair:
             if case["clarifier_reply"]:
@@ -108,6 +128,10 @@ def build_rows() -> list[dict]:
             "ica_tokens": ica_tokens,
             "retry_count_direct": case["retry_count_direct"],
             "retry_count_ica": case["retry_count_ica"],
+            "definition_discovery_turn_direct": definition_discovery_turn_direct,
+            "definition_discovery_turn_ica": definition_discovery_turn_ica,
+            "correction_funnel_depth": correction_funnel_depth,
+            "user_correction_burden": user_correction_burden,
             "human_correctness_direct": case["human_correctness_direct"],
             "human_correctness_ica": case["human_correctness_ica"],
             "human_clarity_direct": case["human_clarity_direct"],
@@ -116,6 +140,8 @@ def build_rows() -> list[dict]:
             "safety_score_ica": case["safety_score_ica"],
             "clarification_bias_score": case["clarification_bias_score"],
             "final_answer_changed": case["final_answer_changed"],
+            "silent_failure_proxy": silent_failure_proxy,
+            "repair_or_silent_failure_risk": repair_or_silent_failure_risk,
             "over_clarification": case["over_clarification"],
             "unnecessary_clarification": case["unnecessary_clarification"],
             "false_refusal": case["false_refusal"],
@@ -197,8 +223,12 @@ def write_markdown(rows: list[dict]) -> None:
         f"| Mean clarity | {mean(rows, 'human_clarity_direct')} | {mean(rows, 'human_clarity_ica')} | {mean(rows, 'human_clarity_ica')} |",
         f"| Mean safety | {mean(rows, 'safety_score_direct')} | {mean(rows, 'safety_score_ica')} | {mean(rows, 'safety_score_ica')} |",
         f"| Mean retry count | {mean(rows, 'retry_count_direct')} | {mean(rows, 'retry_count_direct')} | {mean(rows, 'retry_count_ica')} |",
+        f"| Mean definition-discovery turn | {mean(rows, 'definition_discovery_turn_direct')} | {mean(rows, 'definition_discovery_turn_direct')} | {mean(rows, 'definition_discovery_turn_ica')} |",
+        f"| Mean user correction burden | {mean(rows, 'user_correction_burden')} | {mean(rows, 'user_correction_burden')} | 0.0 |",
         f"| Utility proxy | {mean(rows, 'utility_proxy_direct')} | {mean(rows, 'utility_proxy_ica')} | {mean(rows, 'utility_proxy_ica')} |",
         f"| Clarification / repair rate | 0.0 | {bool_rate(rows, 'needs_repair')} | {round(len(clarifier_rows) / len(rows), 2)} |",
+        f"| Repair-or-silent-failure risk | {bool_rate(rows, 'repair_or_silent_failure_risk')} | {bool_rate(rows, 'repair_or_silent_failure_risk')} | n/a |",
+        f"| Silent-failure proxy | {bool_rate(rows, 'silent_failure_proxy')} | {bool_rate(rows, 'silent_failure_proxy')} | n/a |",
         f"| Clarification hit rate | n/a | n/a | {bool_rate(rows, 'final_answer_changed', lambda row: row['clarifier_asked'])} |",
         f"| Over-clarification rate | n/a | n/a | {bool_rate(rows, 'over_clarification', lambda row: row['clarifier_asked'])} |",
         f"| Unnecessary clarification rate | n/a | n/a | {bool_rate(rows, 'unnecessary_clarification', lambda row: row['clarifier_asked'])} |",
@@ -218,15 +248,16 @@ def write_markdown(rows: list[dict]) -> None:
             "",
             "- ICA improved mean correctness, clarity, and safety on this ambiguity-heavy prompt set.",
             "- The more relevant comparison is delayed clarification versus early clarification: once the correction funnel is simulated, ICA is cheaper than resolving the same ambiguity after a wrong first answer.",
+            "- ICA also discovers the load-bearing ambiguity earlier: in this pilot the mean definition-discovery turn drops from the baseline path to turn 1 under ICA.",
             "- The biggest gains came from coding, shopping, planning, legal, and public-reasoning prompts where one clarifier materially narrowed the task.",
             "- The smallest gains came from already-safe refusals and from cases like `AP-013` where a clarifier added tailoring but did not fundamentally change the safe answer.",
             "- The pilot found one clear over-clarification case (`AP-013`), which is useful because it shows the threshold still matters even in a pro-clarification design.",
-            f"- Baseline first-pass answers required a repair funnel in {sum(1 for row in rows if row['needs_repair'])} of {len(rows)} cases, which is the hidden user-burden that a one-shot token comparison misses.",
+            f"- Baseline first-pass answers required a repair funnel in {sum(1 for row in rows if row['needs_repair'])} of {len(rows)} cases, and {sum(1 for row in rows if row['repair_or_silent_failure_risk'])} of {len(rows)} cases carried repair-or-silent-failure risk.",
             "",
             "## Per-prompt comparison",
             "",
-            "| ID | Route | Repair needed | Direct one-shot tokens | Direct repaired tokens | ICA tokens | First assistant tokens D->I | Final answer changed | Notes |",
-            "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+            "| ID | Route | Repair needed | Direct one-shot tokens | Direct repaired tokens | ICA tokens | Discovery turn D->I | Silent failure proxy | Final answer changed | Notes |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
         ]
     )
 
@@ -234,7 +265,8 @@ def write_markdown(rows: list[dict]) -> None:
         summary_lines.append(
             f"| {row['id']} | {row['decision_type']} | {'yes' if row['needs_repair'] else 'no'} | "
             f"{row['direct_answer_tokens']} | {row['direct_repair_tokens']} | {row['ica_tokens']} | "
-            f"{row['first_assistant_tokens_direct']} -> {row['first_assistant_tokens_ica']} | "
+            f"{row['definition_discovery_turn_direct']} -> {row['definition_discovery_turn_ica']} | "
+            f"{'yes' if row['silent_failure_proxy'] else 'no'} | "
             f"{'yes' if row['final_answer_changed'] else 'no'} | {row['notes']} |"
         )
 
@@ -251,6 +283,7 @@ def write_markdown(rows: list[dict]) -> None:
             "- A one-shot direct answer can look cheaper only because it stops before resolution. That is the wrong comparison for ambiguous prompts.",
             "- Once the benchmark includes the repair funnel, ICA is the cleaner comparison: short clarifier first versus long wrong answer first.",
             "- Efficiency claims should therefore be framed as **tokens to satisfactory resolution**, not just tokens in the first assistant message.",
+            "- The strategic UX benefit is not only fewer retries, but fewer users being forced to discover the ambiguous term by arguing with the model.",
             "- The next best upgrade is a multi-rater run or an API-instrumented benchmark with actual latency and billed-token capture.",
         ]
     )

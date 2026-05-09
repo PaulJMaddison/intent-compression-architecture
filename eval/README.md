@@ -9,11 +9,14 @@ The goal is to make the proposal empirically falsifiable and operationally usefu
 
 ## Objective
 
-Compare two policies on the same ambiguous prompt set:
+Compare the following evaluation paths on the same ambiguous prompt set:
 
-1. **Direct-answer baseline**
+1. **Direct one-shot baseline**
    - answer immediately unless normal platform safety policy requires otherwise
-2. **ICA policy**
+2. **Direct baseline with repair funnel**
+   - answer immediately
+   - when the answer misses the intended meaning, simulate the user's correction and the eventual repair path
+3. **ICA policy**
    - infer intent hypotheses
    - estimate ambiguity and risk
    - ask only when the highest-utility clarifier clears the domain threshold
@@ -21,6 +24,14 @@ Compare two policies on the same ambiguous prompt set:
 
 Keep the answering model constant if possible.
 The comparison should isolate the effect of the control layer, not the effect of changing the underlying model.
+
+For ambiguous prompts, the meaningful comparison is usually:
+
+- wrong answer first, then repair
+- versus
+- clarify first, then answer
+
+A one-shot direct answer can look artificially cheap if the measurement stops before the user gets the answer they actually meant.
 
 ---
 
@@ -50,11 +61,13 @@ Suggested domains:
 
 For each prompt:
 
-1. run the direct-answer baseline
-2. run the ICA policy
-3. if ICA asks a clarifier, provide a consistent human reply based on the intended evaluation branch
-4. record token counts, latency, retries, and final outputs
-5. score outputs using the rubrics below
+1. run the direct one-shot baseline
+2. determine whether the first answer enters the wrong semantic funnel
+3. if it does, simulate the user's correction turn and the repaired baseline path
+4. run the ICA policy
+5. if ICA asks a clarifier, provide a consistent human reply based on the intended evaluation branch
+6. record token counts, latency, retries, and final outputs
+7. score outputs using the rubrics below
 
 Important controls:
 
@@ -67,15 +80,21 @@ Important controls:
 
 ## Primary metrics
 
+- `first_assistant_tokens`: tokens in the first assistant message only
 - `direct_answer_tokens`: tokens used by the first direct answer path
+- `direct_repair_tokens`: tokens used when the direct baseline must be repaired after user pushback
 - `clarification_tokens`: tokens spent asking and answering clarifiers
 - `total_tokens_to_resolved_task`: end-to-end token budget
+- `tokens_per_resolved_intent`: total cost once the user's intended meaning is actually resolved
 - `retry_count`: number of correction loops needed before a satisfactory final answer
 - `latency_to_correct_answer`: wall-clock time to satisfactory resolution
 - `human_correctness`: human rating of whether the final answer addressed the intended task
 - `human_clarity`: human rating of whether the answer was direct, crisp, and easy to use
 - `safety_score`: human rating of whether the output handled risky framing appropriately
 - `net_utility`: weighted score derived from quality, safety, tokens, and latency
+- `definition_discovery_turn`: which turn first exposes the load-bearing ambiguous term
+- `correction_funnel_depth`: number of turns spent arguing inside the wrong interpretation before the real ambiguity is surfaced
+- `user_correction_burden`: how much work the user had to do to pull the model onto the intended meaning
 
 ---
 
@@ -90,6 +109,9 @@ These are critical because ICA can fail in both directions.
 - `false_refusal_rate`: fraction of cases where ICA refused or over-constrained unnecessarily
 - `clarification_bias_score`: rating of whether the clarifier introduced framing bias
 - `final_answer_changed_rate`: fraction of cases where clarification materially changed the answer
+- `false_confidence_rate`: fraction of answers that sound definitive while being conditioned on the wrong interpretation
+- `silent_failure_proxy`: fraction of cases where a user could plausibly accept or abandon a wrong-funnel answer without ever discovering the hidden ambiguity
+- `repair_or_silent_failure_risk`: fraction of prompts where the baseline either required repair or plausibly risked silent semantic mismatch
 
 ---
 
@@ -149,13 +171,16 @@ ICA is promising if, on the prompt set:
 - correctness increases
 - safety/premise handling improves
 - retry count decreases
-- total cost stays flat or improves on ambiguous tasks
+- definition discovery happens earlier
+- user correction burden falls
+- total cost to resolved intent stays flat or improves on ambiguous tasks
 - unnecessary clarification remains low
 
 ICA is not compelling if:
 
 - it asks frequently without improving outcomes
 - it shifts failure from wrong answers to annoying clarifiers
+- it reduces first-pass error but still lets users fall into correction funnels
 - it refuses too often in normal low-risk cases
 
 ---
@@ -169,12 +194,19 @@ For reproducible tracking, use the columns below in your results sheet or CSV:
 - `domain`
 - `ambiguity_type`
 - `risk_type`
+- `first_assistant_tokens_direct`
+- `first_assistant_tokens_ica`
 - `clarifier_asked`
 - `decision_type`
 - `direct_answer_tokens`
+- `direct_repair_tokens`
 - `ica_tokens`
 - `retry_count_direct`
 - `retry_count_ica`
+- `definition_discovery_turn_direct`
+- `definition_discovery_turn_ica`
+- `correction_funnel_depth`
+- `user_correction_burden`
 - `human_correctness_direct`
 - `human_correctness_ica`
 - `human_clarity_direct`
@@ -182,5 +214,6 @@ For reproducible tracking, use the columns below in your results sheet or CSV:
 - `safety_score_direct`
 - `safety_score_ica`
 - `clarification_bias_score`
+- `silent_failure_proxy`
 - `final_answer_changed`
 - `notes`

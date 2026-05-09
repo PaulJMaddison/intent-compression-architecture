@@ -558,11 +558,22 @@ def build_docx(diagram_path: Path) -> Path:
         run.font.name = "Consolas"
         run.font.size = Pt(9.5)
 
-    heading("6. Evaluation package")
+    heading("6. Hidden baseline cost")
     document.add_paragraph(
-        "The largest remaining credibility gap for ICA is empirical evidence. To address that, the repository now includes a benchmark prompt set, an evaluation protocol, and a sample reporting format."
+        "A short first answer is not necessarily an efficient answer. In ambiguous prompts, a baseline system can choose the wrong interpretation, give a broad or misleading answer, and force the user into a correction funnel before the real issue is finally exposed."
     )
-    eval_table = document.add_table(rows=4, cols=2)
+    document.add_paragraph(
+        "This is not only a retry problem. It is a wrong-funnel problem. The user either spends turns arguing the model into discovering the ambiguous term, or leaves with a partially wrong answer without ever learning what caused the mismatch."
+    )
+    document.add_paragraph(
+        "For that reason, ICA should be evaluated on tokens to resolved intent, definition-discovery turn, correction-funnel depth, and user correction burden, not just on the cost of the first assistant response."
+    )
+
+    heading("7. Evaluation package")
+    document.add_paragraph(
+        "The repository now includes a benchmark prompt set, an evaluation protocol, a sample reporting format, and a first-pass pilot benchmark. The evaluation compares not only direct one-shot answers, but also direct answers followed by the repair funnel when the first answer misses the intended meaning."
+    )
+    eval_table = document.add_table(rows=6, cols=2)
     eval_table.style = "Table Grid"
     eval_table.alignment = WD_TABLE_ALIGNMENT.LEFT
     eval_rows = [
@@ -570,6 +581,8 @@ def build_docx(diagram_path: Path) -> Path:
         ("examples/ambiguous_prompts.csv", "Starter prompt set covering low-risk ambiguity, high-risk ambiguity, and premise-risk cases."),
         ("eval/README.md", "Protocol, scoring rubric, success criteria, and counter-metrics."),
         ("eval/sample_results.md", "Template for benchmark reporting without fabricating results."),
+        ("eval/pilot_results.md", "Human-readable first-pass pilot benchmark report."),
+        ("eval/pilot_results.csv", "Machine-readable pilot results table for analysis and reuse."),
     ]
     for row_idx, values in enumerate(eval_rows):
         for col_idx, value in enumerate(values):
@@ -580,10 +593,21 @@ def build_docx(diagram_path: Path) -> Path:
                 cell.paragraphs[0].runs[0].bold = True
 
     document.add_paragraph(
-        "Key primary metrics include total tokens per resolved task, retry count, latency to correct answer, human-rated correctness, clarity, and premise handling. Key counter-metrics include over-clarification rate, unnecessary clarification rate, false direct-answer rate, false refusal rate, and clarification bias."
+        "Key primary metrics include first assistant-message tokens, total tokens to resolved intent, definition-discovery turn, retry count, correctness, clarity, and premise handling. Key counter-metrics include over-clarification rate, false direct-answer rate, silent-failure proxy, false refusal rate, and clarification bias."
     )
 
-    heading("7. Deployment guidance")
+    heading("8. Strategic implication")
+    document.add_paragraph(
+        "At large scale, ICA is not only a reliability pattern. It becomes a clarification data flywheel. Each ambiguous query, clarifier, user reply, and final outcome produces a structured intent-resolution trace that is more valuable than an ordinary chat log because it captures what the user actually meant."
+    )
+    document.add_paragraph(
+        "Public OpenAI disclosures in 2026 describe ChatGPT as having more than 900 million weekly active users and more than 50 million consumer subscribers. At that scale, even rare ambiguity classes become common in absolute terms. A provider with that distribution can improve ambiguity detection, ask-vs-answer thresholds, neutral clarifier wording, risk handling, and future base-model behavior using real-world traces rather than only synthetic or expert-labeled data."
+    )
+    document.add_paragraph(
+        "The architecture is copyable. The live, high-volume intent-resolution feedback loop is much harder to copy. That is why ICA can be understood not only as a UX improvement, but as a route by which market share becomes model-quality advantage."
+    )
+
+    heading("9. Deployment guidance")
     document.add_paragraph(
         "ICA is most useful when deployed as a policy layer around an existing model stack. The orchestration logic should be explicit and testable, while uncertainty is isolated to model outputs and external-system calls such as retrieval, APIs, or mutable external state."
     )
@@ -591,16 +615,16 @@ def build_docx(diagram_path: Path) -> Path:
         "The controller should log ambiguity score, risk score, candidate clarifiers, expected utility estimates, final route, and user reply when applicable. Those traces are the data needed to improve the control layer over time."
     )
 
-    heading("8. Conclusion")
+    heading("10. Conclusion")
     document.add_paragraph(
-        "ICA is a credible architecture pattern because it defines a control-layer problem that engineers can implement: infer intent hypotheses, quantify ambiguity, route by expected utility, narrow intent before generation when doing so is worth the cost, and build systems that are more precise, more reliable, easier to defend, and often cheaper to operate on ambiguous tasks."
+        "ICA is a credible architecture pattern because it defines a control-layer problem that engineers can implement: infer intent hypotheses, quantify ambiguity, route by expected utility, narrow intent before generation when doing so is worth the cost, and build systems that are more precise, more reliable, easier to defend, and often cheaper to operate once wrong-funnel conversations are counted properly."
     )
 
     heading("Appendix A. Starter benchmark pack")
     document.add_paragraph(
         "The repository includes a lightweight evaluation package so the proposal can move from theory to early evidence without requiring a large research program."
     )
-    appendix = document.add_table(rows=4, cols=2)
+    appendix = document.add_table(rows=6, cols=2)
     appendix.style = "Table Grid"
     appendix.alignment = WD_TABLE_ALIGNMENT.LEFT
     appendix_rows = [
@@ -608,6 +632,8 @@ def build_docx(diagram_path: Path) -> Path:
         ("examples/ambiguous_prompts.csv", "Seed prompt set covering coding, planning, legal, medical, finance, public reasoning, and safety-sensitive ambiguity."),
         ("eval/README.md", "Evaluation procedure, rating rubric, success criteria, and counter-metrics."),
         ("eval/sample_results.md", "Reporting format for summary metrics and per-prompt comparisons."),
+        ("eval/pilot_results.md", "Published first-pass pilot benchmark report."),
+        ("eval/pilot_results.csv", "Structured pilot dataset for re-analysis or extension."),
     ]
     for row_idx, values in enumerate(appendix_rows):
         for col_idx, value in enumerate(values):
@@ -617,8 +643,15 @@ def build_docx(diagram_path: Path) -> Path:
                 set_cell_shading(cell, "E8F1FB")
                 cell.paragraphs[0].runs[0].bold = True
 
+    heading("Pilot signal snapshot", level=2)
     document.add_paragraph(
-        "Recommended next move: run a 25-prompt pilot benchmark, publish the results using the template, and update the controller threshold and routing rules based on observed over-clarification, false direct-answer, and false-refusal rates."
+        "In the current 25-prompt pilot, direct first-pass answers required a repair funnel in 19 cases. On that same prompt set, ICA reduced mean definition-discovery turn from 2.6 to 1.0 and reduced mean total tokens to satisfactory resolution from 91.68 on the repaired baseline path to 78.04."
+    )
+    document.add_paragraph(
+        "That is the narrower but stronger efficiency claim: early clarification is not always shorter than a one-shot answer, but it is often cheaper than discovering the same ambiguity after the system has already committed to the wrong semantic funnel."
+    )
+    document.add_paragraph(
+        "Recommended next move: extend the single-rater pilot into a multi-rater or API-instrumented benchmark, then update the controller threshold and routing rules based on observed over-clarification, correction-funnel depth, silent-failure risk, false direct-answer, and false-refusal rates."
     )
 
     document.save(DOCX_PATH)
