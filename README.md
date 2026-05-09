@@ -153,12 +153,7 @@ That is the mathematical justification for the project name.
 For each candidate clarification question $q$, define:
 
 $$
-U(q \mid x) =
-\mathbb{E}_{r \sim P(r \mid x, q)}
-\left[
-L_{\text{direct}}(x) - L_{\text{after}}(x, q, r)
-\right]
-- C(q)
+U(q \mid x) = \mathbb{E}_{r \sim P(r \mid x, q)}\left[L_{\text{direct}}(x) - L_{\text{after}}(x, q, r)\right] - C(q)
 $$
 
 Where:
@@ -197,12 +192,7 @@ Clarification is not free, but neither is guessing.
 One simple objective is:
 
 $$
-L =
-\alpha \cdot \text{error}
-+ \beta \cdot \text{tokens}
-+ \gamma \cdot \text{latency}
-+ \delta \cdot \text{user friction}
-+ \epsilon \cdot \text{safety risk}
+L = \alpha \cdot \text{error} + \beta \cdot \text{tokens} + \gamma \cdot \text{latency} + \delta \cdot \text{user friction} + \epsilon \cdot \text{safety risk}
 $$
 
 This makes the tradeoff explicit:
