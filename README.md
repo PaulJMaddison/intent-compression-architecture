@@ -309,6 +309,16 @@ Reference example:
 
 - [`spec/clarifier_output.example.json`](spec/clarifier_output.example.json)
 
+Validation command:
+
+```bash
+python -m jsonschema spec/clarifier_output.schema.json -i spec/clarifier_output.example.json
+```
+
+The schema uses a canonical repo URL as its `$id`, and the example is intended to be machine-valid rather
+than illustrative only. The same check is also wired into GitHub Actions in
+[`.github/workflows/validate-clarifier-schema.yml`](.github/workflows/validate-clarifier-schema.yml).
+
 Illustrative payload:
 
 ```json
@@ -458,6 +468,11 @@ This repo now includes a lightweight benchmark scaffold:
 - first-pass pilot benchmark: [`eval/pilot_results.md`](eval/pilot_results.md)
 - machine-readable pilot table: [`eval/pilot_results.csv`](eval/pilot_results.csv)
 
+Important reading note:
+
+> The pilot is designed to test ambiguous-prompt handling, not to estimate production-wide clarification
+> frequency.
+
 The intended benchmark compares a direct-answer baseline against an ICA policy across 20 to 50 ambiguous prompts.
 
 In practice, the more meaningful comparison is:
@@ -506,6 +521,42 @@ Those counter-metrics matter because ICA can fail in both directions:
 
 - it can ask too often and annoy users
 - it can ask too rarely and let ambiguity damage the answer
+
+---
+
+## How to reproduce the pilot
+
+1. Install the minimal Python dependencies:
+
+```bash
+python -m pip install pandas tiktoken jsonschema python-docx pillow pymupdf
+```
+
+2. Validate the clarifier contract:
+
+```bash
+python -m jsonschema spec/clarifier_output.schema.json -i spec/clarifier_output.example.json
+```
+
+3. Regenerate the pilot benchmark outputs:
+
+```bash
+python eval/build_pilot_report.py
+```
+
+4. Inspect the generated artifacts:
+
+- [`eval/pilot_results.csv`](eval/pilot_results.csv)
+- [`eval/pilot_results.md`](eval/pilot_results.md)
+
+5. Regenerate the proposal artifacts if needed:
+
+```bash
+python scripts/build_repo_artifacts.py
+```
+
+On Windows, exporting the updated DOCX to PDF uses the PowerShell helper in
+[`scripts/export_docx_to_pdf.ps1`](scripts/export_docx_to_pdf.ps1).
 
 ---
 

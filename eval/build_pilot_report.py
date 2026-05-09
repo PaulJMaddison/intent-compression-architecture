@@ -244,10 +244,11 @@ def write_markdown(rows: list[dict]) -> None:
         f"| Over-clarification rate | n/a | n/a | {bool_rate(rows, 'over_clarification', lambda row: row['clarifier_asked'])} |",
         f"| Unnecessary clarification rate | n/a | n/a | {bool_rate(rows, 'unnecessary_clarification', lambda row: row['clarifier_asked'])} |",
         f"| False refusal rate | {bool_rate(rows, 'false_refusal')} | {bool_rate(rows, 'false_refusal')} | {bool_rate(rows, 'false_refusal')} |",
-            "",
-            "Note: the repaired-baseline column equalizes final answer quality with ICA only in the cases that needed repair, then separately penalizes the repaired path for extra tokens and retry burden.",
-            "",
-            "## Route distribution",
+        "",
+        "Note: the repaired-baseline column equalizes final answer quality with ICA only in the cases that needed repair, then separately penalizes the repaired path for extra tokens and retry burden.",
+        "Note: this pilot is designed to test ambiguous-prompt handling, not to estimate production-wide clarification frequency.",
+        "",
+        "## Route distribution",
         "",
     ]
 

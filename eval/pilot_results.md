@@ -40,6 +40,7 @@ Important limitations:
 | False refusal rate | 0.0 | 0.0 | 0.0 |
 
 Note: the repaired-baseline column equalizes final answer quality with ICA only in the cases that needed repair, then separately penalizes the repaired path for extra tokens and retry burden.
+Note: this pilot is designed to test ambiguous-prompt handling, not to estimate production-wide clarification frequency.
 
 ## Route distribution
 

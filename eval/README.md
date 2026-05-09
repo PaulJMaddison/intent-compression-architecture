@@ -35,6 +35,25 @@ A one-shot direct answer can look artificially cheap if the measurement stops be
 
 ---
 
+## Reproducibility
+
+To reproduce the current pilot artifacts from this repository:
+
+1. install the Python dependencies used by the benchmark and document scripts
+2. validate the clarifier schema and example
+3. run `python eval/build_pilot_report.py`
+4. inspect `eval/pilot_results.csv` and `eval/pilot_results.md`
+
+Minimal validation command:
+
+```bash
+python -m jsonschema spec/clarifier_output.schema.json -i spec/clarifier_output.example.json
+```
+
+The published pilot is designed to test ambiguous-prompt handling, not to estimate production-wide clarification frequency.
+
+---
+
 ## Dataset
 
 Use [`../examples/ambiguous_prompts.csv`](../examples/ambiguous_prompts.csv) as the starter prompt set.

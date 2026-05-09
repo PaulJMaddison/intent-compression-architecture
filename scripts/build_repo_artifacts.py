@@ -543,6 +543,9 @@ def build_docx(diagram_path: Path) -> Path:
     document.add_paragraph(
         "The control layer should emit a structured decision object rather than a free-form paragraph. This proposal includes a JSON schema and reference example in spec/clarifier_output.schema.json and spec/clarifier_output.example.json."
     )
+    document.add_paragraph(
+        "The repository also includes a lightweight schema validation check so the example can be tested against the contract rather than presented as a static mockup."
+    )
     code = document.add_paragraph()
     code.style = document.styles["Normal"]
     for line in [
@@ -572,6 +575,9 @@ def build_docx(diagram_path: Path) -> Path:
     heading("7. Evaluation package")
     document.add_paragraph(
         "The repository now includes a benchmark prompt set, an evaluation protocol, a sample reporting format, and a first-pass pilot benchmark. The evaluation compares not only direct one-shot answers, but also direct answers followed by the repair funnel when the first answer misses the intended meaning. The next credibility jump is a multi-rater or live-user benchmark."
+    )
+    document.add_paragraph(
+        "The published pilot is designed to test ambiguous-prompt handling, not to estimate production-wide clarification frequency."
     )
     eval_table = document.add_table(rows=6, cols=2)
     eval_table.style = "Table Grid"
@@ -652,6 +658,9 @@ def build_docx(diagram_path: Path) -> Path:
     )
     document.add_paragraph(
         "In repaired-baseline scoring, final answer quality is equalized with ICA only when the baseline needed repair. The repaired utility score still penalizes extra repair tokens and retry burden so delayed clarification does not receive a free tie."
+    )
+    document.add_paragraph(
+        "Reproduction path: validate the schema/example pair, run eval/build_pilot_report.py, inspect the generated CSV and Markdown report, then regenerate the proposal artifacts if needed."
     )
     document.add_paragraph(
         "Recommended next move: extend the single-rater pilot into a multi-rater or API-instrumented benchmark, then update the controller threshold and routing rules based on observed over-clarification, correction-funnel depth, silent-failure risk, false direct-answer, and false-refusal rates."
