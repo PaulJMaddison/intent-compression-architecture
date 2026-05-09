@@ -1,0 +1,6 @@
+pandas
+tiktoken
+jsonschema
+python-docx
+pillow
+pymupdf

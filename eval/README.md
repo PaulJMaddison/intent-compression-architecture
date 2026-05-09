@@ -44,6 +44,12 @@ To reproduce the current pilot artifacts from this repository:
 3. run `python eval/build_pilot_report.py`
 4. inspect `eval/pilot_results.csv` and `eval/pilot_results.md`
 
+Recommended install command:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
 Minimal validation command:
 
 ```bash

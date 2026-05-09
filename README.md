@@ -519,7 +519,7 @@ Those counter-metrics matter because ICA can fail in both directions:
 1. Install the minimal Python dependencies:
 
 ```bash
-python -m pip install pandas tiktoken jsonschema python-docx pillow pymupdf
+python -m pip install -r requirements.txt
 ```
 
 2. Validate the clarifier contract:
