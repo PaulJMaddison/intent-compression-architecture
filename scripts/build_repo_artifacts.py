@@ -571,7 +571,7 @@ def build_docx(diagram_path: Path) -> Path:
 
     heading("7. Evaluation package")
     document.add_paragraph(
-        "The repository now includes a benchmark prompt set, an evaluation protocol, a sample reporting format, and a first-pass pilot benchmark. The evaluation compares not only direct one-shot answers, but also direct answers followed by the repair funnel when the first answer misses the intended meaning."
+        "The repository now includes a benchmark prompt set, an evaluation protocol, a sample reporting format, and a first-pass pilot benchmark. The evaluation compares not only direct one-shot answers, but also direct answers followed by the repair funnel when the first answer misses the intended meaning. The next credibility jump is a multi-rater or live-user benchmark."
     )
     eval_table = document.add_table(rows=6, cols=2)
     eval_table.style = "Table Grid"
@@ -645,10 +645,13 @@ def build_docx(diagram_path: Path) -> Path:
 
     heading("Pilot signal snapshot", level=2)
     document.add_paragraph(
-        "In the current 25-prompt pilot, direct first-pass answers required a repair funnel in 19 cases. On that same prompt set, ICA reduced mean definition-discovery turn from 2.6 to 1.0 and reduced mean total tokens to satisfactory resolution from 91.68 on the repaired baseline path to 78.04."
+        "In the current 25-prompt pilot, direct first-pass answers required a repair funnel in 19 cases. On that same prompt set, ICA reduced mean definition-discovery turn from 2.6 to 1.0 and reduced mean total tokens to satisfactory resolution from 71.68 on the repaired baseline path to 62.08."
     )
     document.add_paragraph(
         "That is the narrower but stronger efficiency claim: early clarification is not always shorter than a one-shot answer, but it is often cheaper than discovering the same ambiguity after the system has already committed to the wrong semantic funnel."
+    )
+    document.add_paragraph(
+        "In repaired-baseline scoring, final answer quality is equalized with ICA only when the baseline needed repair. The repaired utility score still penalizes extra repair tokens and retry burden so delayed clarification does not receive a free tie."
     )
     document.add_paragraph(
         "Recommended next move: extend the single-rater pilot into a multi-rater or API-instrumented benchmark, then update the controller threshold and routing rules based on observed over-clarification, correction-funnel depth, silent-failure risk, false direct-answer, and false-refusal rates."

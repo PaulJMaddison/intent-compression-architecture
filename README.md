@@ -38,6 +38,28 @@ It is a routing, scoring, and control problem that sits between user input and f
 
 ---
 
+## Claim ladder
+
+1. **Weak claim**
+Clarifying questions can improve some ambiguous conversations.
+
+2. **Engineering claim**
+A control layer can decide when clarification has positive expected utility.
+
+3. **Evaluation claim**
+ICA should be measured by tokens per resolved intent, not first-pass answer length.
+
+4. **Safety claim**
+Ambiguity and intent risk should be scored separately before generation.
+
+5. **Strategic claim**
+At large scale, clarification traces become structured intent-resolution data.
+
+6. **Moat claim**
+The architecture is copyable; the trained clarification policy and clarification data flywheel are harder to copy.
+
+---
+
 ## Problem statement
 
 A common failure mode in AI conversations is **unresolved ambiguity**.
@@ -93,25 +115,25 @@ This is the foundation of ICA.
 The word **compression** should be taken literally, not metaphorically.
 
 ICA treats ambiguity as entropy over possible user intents.
-Let \(I\) be the latent intent variable and \(x\) be the user query.
+Let $I$ be the latent intent variable and $x$ be the user query.
 
 Before clarification:
 
-\[
+$$
 H(I \mid x)
-\]
+$$
 
-After asking clarification \(q\) and observing reply \(r\):
+After asking clarification $q$ and observing reply $r$:
 
-\[
+$$
 H(I \mid x, q, r)
-\]
+$$
 
 The value of a clarification is the expected reduction in intent entropy:
 
-\[
+$$
 IG(q) = H(I \mid x) - \mathbb{E}_{r \sim P(r \mid x, q)}[H(I \mid x, q, r)]
-\]
+$$
 
 So ICA **compresses the intent distribution before generation**.
 It narrows the model's uncertainty set before the answer is produced.
@@ -128,32 +150,32 @@ That is the mathematical justification for the project name.
 
 ### Expected-utility formulation
 
-For each candidate clarification question \(q\), define:
+For each candidate clarification question $q$, define:
 
-\[
+$$
 U(q \mid x) =
 \mathbb{E}_{r \sim P(r \mid x, q)}
-\big[
+\left[
 L_{\text{direct}}(x) - L_{\text{after}}(x, q, r)
-\big]
+\right]
 - C(q)
-\]
+$$
 
 Where:
 
-- \(x\) is the user query
-- \(r\) is the user's possible reply to clarification \(q\)
-- \(L_{\text{direct}}(x)\) is the expected loss from answering immediately
-- \(L_{\text{after}}(x, q, r)\) is the expected loss after receiving reply \(r\)
-- \(C(q)\) is the cost of asking the question
+- $x$ is the user query
+- $r$ is the user's possible reply to clarification $q$
+- $L_{\text{direct}}(x)$ is the expected loss from answering immediately
+- $L_{\text{after}}(x, q, r)$ is the expected loss after receiving reply $r$
+- $C(q)$ is the cost of asking the question
 
 The routing rule becomes:
 
-\[
+$$
 \text{Ask iff } \max_q U(q \mid x) > \tau
-\]
+$$
 
-Where \(\tau\) is a domain-specific threshold.
+Where $\tau$ is a domain-specific threshold.
 
 Plain English:
 
@@ -174,13 +196,14 @@ Clarification is not free, but neither is guessing.
 
 One simple objective is:
 
-\[
-L = \alpha \cdot \text{error}
-  + \beta \cdot \text{tokens}
-  + \gamma \cdot \text{latency}
-  + \delta \cdot \text{user friction}
-  + \epsilon \cdot \text{safety risk}
-\]
+$$
+L =
+\alpha \cdot \text{error}
++ \beta \cdot \text{tokens}
++ \gamma \cdot \text{latency}
++ \delta \cdot \text{user friction}
++ \epsilon \cdot \text{safety risk}
+$$
 
 This makes the tradeoff explicit:
 
@@ -202,15 +225,15 @@ Two equivalent views are useful:
 
 1. **Information-gain view**
 
-\[
+$$
 q^* = \arg\max_q IG(q)
-\]
+$$
 
 2. **Utility view**
 
-\[
+$$
 q^* = \arg\max_q U(q \mid x)
-\]
+$$
 
 In practice, the utility view is stronger because it balances entropy reduction against real interaction cost.
 
@@ -426,7 +449,7 @@ A short wrong answer is not cheaper than a short clarifying question if the answ
 
 ## Evaluation package
 
-The biggest remaining credibility jump is empirical support.
+The next credibility jump is stronger empirical support: a multi-rater or live-user benchmark.
 This repo now includes a lightweight benchmark scaffold:
 
 - prompt set: [`examples/ambiguous_prompts.csv`](examples/ambiguous_prompts.csv)

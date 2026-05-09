@@ -73,6 +73,9 @@ def build_rows() -> list[dict]:
             else:
                 direct_repair_user_reply = "That's not what I meant. Please answer the actual intent behind the question."
         repaired_final_output = case["ica_output"] if needs_repair else case["direct_output"]
+        repaired_correctness = case["human_correctness_ica"] if needs_repair else case["human_correctness_direct"]
+        repaired_clarity = case["human_clarity_ica"] if needs_repair else case["human_clarity_direct"]
+        repaired_safety = case["safety_score_ica"] if needs_repair else case["safety_score_direct"]
 
         direct_tokens = token_count(prompt_text + "\n\n" + case["direct_output"], encoder)
         clarification_text = ""
@@ -152,6 +155,13 @@ def build_rows() -> list[dict]:
                 direct_tokens,
                 case["retry_count_direct"],
             ),
+            "utility_proxy_repaired_direct": utility_proxy(
+                repaired_correctness,
+                repaired_clarity,
+                repaired_safety,
+                direct_repair_tokens,
+                case["retry_count_direct"],
+            ),
             "utility_proxy_ica": utility_proxy(
                 case["human_correctness_ica"],
                 case["human_clarity_ica"],
@@ -212,6 +222,7 @@ def write_markdown(rows: list[dict]) -> None:
         "- Wall-clock latency was **not** instrumented in provider milliseconds, so this pilot uses retry count and extra-turn cost rather than absolute latency.",
         "- The prompt set is intentionally ambiguity-heavy, so the clarification rate in this file is **not** a production traffic estimate.",
         "- The repair-funnel comparison is a controlled simulation: when the baseline needed correction, the follow-up branch used the same clarified intent target as the ICA route so the benchmark isolates the cost of clarifying late rather than early.",
+        "- In repaired-baseline scoring, final quality is equalized with ICA only when the baseline needed repair. The repaired utility score still penalizes extra repair tokens and retry burden so delayed clarification does not receive a free tie.",
         "",
         "## Summary",
         "",
@@ -225,7 +236,7 @@ def write_markdown(rows: list[dict]) -> None:
         f"| Mean retry count | {mean(rows, 'retry_count_direct')} | {mean(rows, 'retry_count_direct')} | {mean(rows, 'retry_count_ica')} |",
         f"| Mean definition-discovery turn | {mean(rows, 'definition_discovery_turn_direct')} | {mean(rows, 'definition_discovery_turn_direct')} | {mean(rows, 'definition_discovery_turn_ica')} |",
         f"| Mean user correction burden | {mean(rows, 'user_correction_burden')} | {mean(rows, 'user_correction_burden')} | 0.0 |",
-        f"| Utility proxy | {mean(rows, 'utility_proxy_direct')} | {mean(rows, 'utility_proxy_ica')} | {mean(rows, 'utility_proxy_ica')} |",
+        f"| Utility proxy | {mean(rows, 'utility_proxy_direct')} | {mean(rows, 'utility_proxy_repaired_direct')} | {mean(rows, 'utility_proxy_ica')} |",
         f"| Clarification / repair rate | 0.0 | {bool_rate(rows, 'needs_repair')} | {round(len(clarifier_rows) / len(rows), 2)} |",
         f"| Repair-or-silent-failure risk | {bool_rate(rows, 'repair_or_silent_failure_risk')} | {bool_rate(rows, 'repair_or_silent_failure_risk')} | n/a |",
         f"| Silent-failure proxy | {bool_rate(rows, 'silent_failure_proxy')} | {bool_rate(rows, 'silent_failure_proxy')} | n/a |",
@@ -233,8 +244,10 @@ def write_markdown(rows: list[dict]) -> None:
         f"| Over-clarification rate | n/a | n/a | {bool_rate(rows, 'over_clarification', lambda row: row['clarifier_asked'])} |",
         f"| Unnecessary clarification rate | n/a | n/a | {bool_rate(rows, 'unnecessary_clarification', lambda row: row['clarifier_asked'])} |",
         f"| False refusal rate | {bool_rate(rows, 'false_refusal')} | {bool_rate(rows, 'false_refusal')} | {bool_rate(rows, 'false_refusal')} |",
-        "",
-        "## Route distribution",
+            "",
+            "Note: the repaired-baseline column equalizes final answer quality with ICA only in the cases that needed repair, then separately penalizes the repaired path for extra tokens and retry burden.",
+            "",
+            "## Route distribution",
         "",
     ]
 

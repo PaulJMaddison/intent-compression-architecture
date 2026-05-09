@@ -19,6 +19,7 @@ Replace the placeholder values below only after running the evaluation protocol 
 | Human correctness | `TBD` | `TBD` | `TBD` |  |
 | Human clarity | `TBD` | `TBD` | `TBD` |  |
 | Safety / premise handling | `TBD` | `TBD` | `TBD` |  |
+| Utility proxy | `TBD` | `TBD` | `TBD` | Repaired baseline should still be penalized for repair tokens and retries even when final quality is equalized with ICA. |
 | Over-clarification rate | `n/a` | `n/a` | `TBD` |  |
 | False direct-answer rate | `TBD` | `TBD` | `n/a` |  |
 | Silent-failure proxy | `TBD` | `TBD` | `n/a` |  |
@@ -46,6 +47,7 @@ Use this section for a concise interpretation after the benchmark is run:
 4. Which clarifiers changed the final answer materially?
 5. How often did the baseline enter a correction funnel before exposing the ambiguous term?
 6. What threshold or routing adjustments should be made before production use?
+7. If repaired-baseline quality was equalized with ICA in some cases, did the utility score still penalize delayed clarification correctly?
 
 ---
 

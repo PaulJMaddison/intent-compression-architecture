@@ -92,6 +92,7 @@ Important controls:
 - `human_clarity`: human rating of whether the answer was direct, crisp, and easy to use
 - `safety_score`: human rating of whether the output handled risky framing appropriately
 - `net_utility`: weighted score derived from quality, safety, tokens, and latency
+- `utility_proxy_repaired_direct`: repaired-baseline utility that keeps final quality comparable to ICA where repair succeeds, while still penalizing extra tokens and retries
 - `definition_discovery_turn`: which turn first exposes the load-bearing ambiguous term
 - `correction_funnel_depth`: number of turns spent arguing inside the wrong interpretation before the real ambiguity is surfaced
 - `user_correction_burden`: how much work the user had to do to pull the model onto the intended meaning
@@ -160,6 +161,8 @@ When publishing, distinguish clearly between:
 - pilot measurements
 - full benchmark findings
 
+If a repaired-baseline column uses the same clarified final answer target as ICA, say that explicitly and keep a separate utility score that still penalizes repair tokens and retry burden.
+
 Do not present placeholders or manual estimates as empirical results.
 
 ---
@@ -215,5 +218,8 @@ For reproducible tracking, use the columns below in your results sheet or CSV:
 - `safety_score_ica`
 - `clarification_bias_score`
 - `silent_failure_proxy`
+- `utility_proxy_direct`
+- `utility_proxy_repaired_direct`
+- `utility_proxy_ica`
 - `final_answer_changed`
 - `notes`

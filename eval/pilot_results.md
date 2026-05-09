@@ -16,6 +16,7 @@ Important limitations:
 - Wall-clock latency was **not** instrumented in provider milliseconds, so this pilot uses retry count and extra-turn cost rather than absolute latency.
 - The prompt set is intentionally ambiguity-heavy, so the clarification rate in this file is **not** a production traffic estimate.
 - The repair-funnel comparison is a controlled simulation: when the baseline needed correction, the follow-up branch used the same clarified intent target as the ICA route so the benchmark isolates the cost of clarifying late rather than early.
+- In repaired-baseline scoring, final quality is equalized with ICA only when the baseline needed repair. The repaired utility score still penalizes extra repair tokens and retry burden so delayed clarification does not receive a free tie.
 
 ## Summary
 
@@ -29,7 +30,7 @@ Important limitations:
 | Mean retry count | 0.76 | 0.76 | 0.0 |
 | Mean definition-discovery turn | 2.6 | 2.6 | 1.0 |
 | Mean user correction burden | 0.76 | 0.76 | 0.0 |
-| Utility proxy | 3.22 | 4.27 | 4.27 |
+| Utility proxy | 3.22 | 3.7 | 4.27 |
 | Clarification / repair rate | 0.0 | 0.76 | 0.84 |
 | Repair-or-silent-failure risk | 0.76 | 0.76 | n/a |
 | Silent-failure proxy | 0.64 | 0.64 | n/a |
@@ -37,6 +38,8 @@ Important limitations:
 | Over-clarification rate | n/a | n/a | 0.05 |
 | Unnecessary clarification rate | n/a | n/a | 0.05 |
 | False refusal rate | 0.0 | 0.0 | 0.0 |
+
+Note: the repaired-baseline column equalizes final answer quality with ICA only in the cases that needed repair, then separately penalizes the repaired path for extra tokens and retry burden.
 
 ## Route distribution
 
