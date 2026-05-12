@@ -709,6 +709,16 @@ In practice, the more meaningful comparison is:
 For ambiguous prompts, the second and third comparisons are the ones that matter most.
 The first can make a wrong answer look artificially cheap simply because the measurement stops before the intent is actually resolved.
 
+The current pilot utility proxy is intentionally simple and reproducible:
+
+```text
+quality = (correctness + clarity + safety) / 3
+utility_proxy = quality - 0.01 * total_tokens - 0.5 * retries
+```
+
+So the score rewards judged final-answer quality and penalizes token cost and retry burden.
+It does **not** claim to measure live user satisfaction, abandonment, wall-clock latency, or revenue impact.
+
 Primary outcome metrics:
 
 - first assistant-message tokens
@@ -743,6 +753,11 @@ Those counter-metrics matter because ICA can fail in both directions:
 
 - it can ask too often and annoy users
 - it can ask too rarely and let ambiguity damage the answer
+
+The current 25-prompt pilot is deliberately ambiguity-heavy and routes 20 of 25 prompts to `ask_clarifier`.
+That 80% clarification rate is defensible for a stress set, but it should **not** be treated as a desired production rate.
+On representative traffic, clarification rate and over-clarification rate should become the primary tau-calibration signals.
+If a live API run or broader traffic sample still clarifies at stress-test frequency, the threshold is probably too low or the prompt set is still biased toward ambiguity.
 
 The next serious empirical step is still a **multi-rater or API-instrumented benchmark** with independent
 scoring, billed token capture, and real latency measurement.

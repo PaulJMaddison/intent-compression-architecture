@@ -621,7 +621,10 @@ def build_docx(diagram_path: Path) -> Path:
         "Key primary metrics include first assistant-message tokens, total tokens to resolved intent, definition-discovery turn, retry count, correctness, clarity, and premise handling. Key counter-metrics include over-clarification rate, false direct-answer rate, silent-failure proxy, false refusal rate, and clarification bias."
     )
     document.add_paragraph(
-        "The pilot utility proxy is transparent rather than implicit: quality equals the mean of correctness, clarity, and safety; utility_proxy equals quality minus 0.01 times total tokens minus 0.5 times retries. This proxy does not measure live satisfaction, abandonment, wall-clock latency, or revenue impact."
+        "The pilot utility proxy is transparent rather than implicit: quality = (correctness + clarity + safety) / 3; utility_proxy = quality - 0.01 * total_tokens - 0.5 * retries. This proxy rewards judged final-answer quality and penalizes token cost and retry burden. It does not measure live satisfaction, abandonment, wall-clock latency, or revenue impact."
+    )
+    document.add_paragraph(
+        "The current 25-prompt pilot is deliberately ambiguity-heavy and routes 20 of 25 prompts to ask_clarifier. That 80 percent clarification rate is defensible for a stress set, but it is not a desired production rate. On representative traffic, clarification rate, over-clarification rate, unnecessary clarification rate, and false direct-answer rate should become the primary tau-calibration signals."
     )
     document.add_paragraph(
         "The circularity risk is real. The current pilot is single-rater and uses evaluator-supplied clarification replies. The next benchmark should separate reply generation from scoring, use route-blind or independent review where feasible, report inter-rater agreement, and tune tau on a separate split from the headline evaluation."

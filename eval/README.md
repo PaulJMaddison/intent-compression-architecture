@@ -140,6 +140,24 @@ That equalizes final quality where possible, while the utility proxy still penal
 
 ---
 
+## Calibration signal
+
+The current pilot is deliberately ambiguity-heavy, and its ICA route distribution is therefore not a production target.
+In the current 25-prompt stress set, ICA asks a clarifier for 20 prompts.
+That 80% clarification rate is defensible for stress testing but would be a warning sign on representative traffic.
+
+For the next API-instrumented run, treat these as primary tau-calibration signals:
+
+- clarification rate on representative prompts
+- over-clarification rate
+- unnecessary clarification rate
+- false direct-answer rate
+- user abandonment after clarification, if available
+
+If clarification remains high outside the stress set, increase tau, raise `min_ambiguity_to_ask`, add stronger candidate utility penalties, or separate traffic by domain-specific thresholds.
+
+---
+
 ## Primary metrics
 
 - `first_assistant_tokens`: tokens in the first assistant message only
