@@ -473,6 +473,11 @@ def build_docx(diagram_path: Path) -> Path:
         "ICA changes the default posture of an LLM system from answer-first to intent-first. It turns ambiguity into a measured control signal, clarification into an expected-utility decision, interaction history into compact state, user corrections into structured intent-resolution data, and the first answer into the outcome of a routing policy rather than an unverified guess.",
         "A common failure mode in LLM systems is unresolved intent. Users ask questions that admit multiple plausible interpretations, while the system is optimized to answer immediately. The result is a broad first answer, a misleading first answer, a user correction, or no correction at all because the user leaves.",
         "ICA inserts a control layer between user input and final generation or action. The layer estimates likely intent hypotheses, scores ambiguity and risk, and decides whether clarification improves the expected outcome enough to justify the extra turn.",
+    ]:
+        document.add_paragraph(text)
+
+    heading("Agentic & coding workflows", level=2)
+    for text in [
         "The same failure becomes more expensive in agents. In a coding agent, unresolved or drifting intent can produce wrong edits, repeated failed fixes, noisy tool loops, and expensive context growth. ICA frames this as an intent-control problem rather than merely a larger-context problem.",
         "That makes the agentic use case economically important: a drifted coding agent does not only spend extra tokens, it spends extra tokens taking the wrong actions. A compact task-state packet attacks both costs at once: fewer tokens per step and fewer wasted steps.",
     ]:

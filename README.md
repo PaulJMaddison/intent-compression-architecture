@@ -74,7 +74,7 @@ When a load-bearing word changes the answer, the system should resolve the word 
 ICA starts with clarification, but the architecture is broader than chat UX.
 It is a general pattern for keeping a model aligned to the meaning that matters while the interaction evolves.
 
-That matters in three places:
+That matters immediately in chat and safety-critical framing:
 
 1. **Chat**
 A single ambiguous word can produce an answer that is cautious, plausible, and still misleading.
@@ -82,8 +82,11 @@ A single ambiguous word can produce an answer that is cautious, plausible, and s
 2. **Safety and truthfulness**
 A premature answer can become a quote-mining surface: "the AI agrees with me," even when the model never resolved the key definition.
 
-3. **Agentic and coding systems**
-The same unresolved intent becomes more expensive when the model can take actions.
+---
+
+## Agentic & Coding Workflows
+
+The control-plane argument becomes even sharper when the model can take actions.
 A coding agent can drift from the original task, overreact to terminal noise, repeat failed fixes, and burn tokens while modifying the wrong thing.
 
 This is where ICA becomes a **control plane for agentic systems**.
@@ -132,17 +135,17 @@ Clarifying questions can improve some ambiguous conversations.
 2. **Engineering claim**
 A control layer can decide when clarification has positive expected utility.
 
-3. **Evaluation claim**
+3. **Agentic claim**
+The same compression principle becomes task-state control for long-running agents: preserve the original goal, filter semantic noise, reduce drift, and lower wasted action loops.
+
+4. **Evaluation claim**
 ICA should be measured by tokens per resolved intent, not first-pass answer length.
 
-4. **Safety claim**
+5. **Safety claim**
 Ambiguity and intent risk should be scored separately before generation.
 
-5. **Strategic claim**
+6. **Strategic claim**
 At large scale, clarification traces become structured intent-resolution data.
-
-6. **Agentic claim**
-The same compression principle becomes task-state control for long-running agents: preserve the original goal, filter semantic noise, reduce drift, and lower wasted action loops.
 
 7. **Moat claim**
 The architecture is visible; the trained clarification policy, threshold calibration, ambiguity coverage, and intent-resolution data flywheel are harder to copy.

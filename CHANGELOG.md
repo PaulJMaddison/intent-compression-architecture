@@ -13,6 +13,7 @@
 - Added "control plane for intent" positioning for reliable LLM and agentic systems.
 - Promoted the agentic/coding-agent use case near the top of the README and proposal framing.
 - Rewrote the README opening so ICA leads as an intent-control architecture rather than a cautious clarification feature.
+- Added a standalone "Agentic & Coding Workflows" section and elevated the agentic claim in the claim ladder.
 
 This release still uses the offline mock provider for package validation. Live OpenAI/xAI provider adapters are intentionally left as the next implementation milestone.
 
