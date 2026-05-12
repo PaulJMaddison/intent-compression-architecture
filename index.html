@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Intent Compression Architecture is a clarification-first control plane for reliable LLM and agent systems."
+    >
+    <title>Intent Compression Architecture</title>
+    <link rel="stylesheet" href="assets/site.css">
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <nav class="nav" aria-label="Primary navigation">
+        <a class="brand" href="#top" aria-label="Intent Compression Architecture home">
+          <span class="brand-mark" aria-hidden="true">ICA</span>
+          <span>Intent Compression Architecture</span>
+        </a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links">
+          <span class="sr-only">Open navigation</span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+        </button>
+        <div class="nav-links" id="nav-links">
+          <a href="#architecture">Architecture</a>
+          <a href="#policy">Policy</a>
+          <a href="#evidence">Evidence</a>
+          <a href="#implementation">Implementation</a>
+          <a class="nav-cta" href="https://github.com/PaulJMaddison/intent-compression-architecture">GitHub</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero section-band">
+        <div class="hero-grid">
+          <div class="hero-copy reveal">
+            <p class="eyebrow">Clarification-first orchestration for LLM systems</p>
+            <h1>Resolve intent before the model guesses.</h1>
+            <p class="hero-lede">
+              ICA is a control plane that sits before generation or agent action.
+              It scores ambiguity, separates risk from uncertainty, and decides
+              whether to answer now, ask one high-value clarifier, premise-check,
+              or refuse and redirect.
+            </p>
+            <div class="hero-actions" aria-label="Project actions">
+              <a class="button primary" href="#architecture">Explore the system</a>
+              <a class="button secondary" href="ICA_Engineering_Design_Proposal1.pdf">Read the proposal</a>
+            </div>
+          </div>
+
+          <div class="hero-visual reveal" aria-label="ICA routing preview">
+            <div class="signal-board">
+              <div class="board-topline">
+                <span class="pulse-dot" aria-hidden="true"></span>
+                <span>intent-control-plane.trace</span>
+              </div>
+              <div class="query-card">
+                <span>User query</span>
+                <strong>“Make this API faster.”</strong>
+              </div>
+              <div class="signal-stack" aria-label="ICA decision stages">
+                <div class="signal-row active">
+                  <span>01</span>
+                  <p>Infer competing intent hypotheses</p>
+                </div>
+                <div class="signal-row active">
+                  <span>02</span>
+                  <p>Score ambiguity and risk separately</p>
+                </div>
+                <div class="signal-row active">
+                  <span>03</span>
+                  <p>Apply expected-utility threshold</p>
+                </div>
+                <div class="signal-row selected">
+                  <span>04</span>
+                  <p>Ask: latency, throughput, cost, or developer iteration?</p>
+                </div>
+              </div>
+              <div class="route-strip" aria-label="Available routes">
+                <span>answer_direct</span>
+                <span class="lit">ask_clarifier</span>
+                <span>premise_check</span>
+                <span>refuse_redirect</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section intro reveal" id="what">
+        <div class="section-kicker">What It Does</div>
+        <div class="split">
+          <h2>ICA changes the system posture from answer-first to intent-first.</h2>
+          <div>
+            <p>
+              Modern LLM systems do not only need bigger context windows. They
+              need better intent control. ICA treats ambiguity as an engineering
+              signal: when a word, premise, or task goal carries enough
+              uncertainty to change the answer, the system compresses that
+              uncertainty into a small clarification or task-state update before
+              acting.
+            </p>
+            <p>
+              The key rule is deliberately simple:
+              <strong>ask only when the expected improvement in quality or safety
+              exceeds the cost of another turn.</strong>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section metrics-strip reveal" aria-label="Project highlights">
+        <div class="metric">
+          <strong>4 routes</strong>
+          <span>answer, clarify, premise-check, redirect</span>
+        </div>
+        <div class="metric">
+          <strong>25 prompts</strong>
+          <span>ambiguity-heavy pilot benchmark</span>
+        </div>
+        <div class="metric">
+          <strong>0 retries</strong>
+          <span>mean ICA retry count in pilot</span>
+        </div>
+        <div class="metric">
+          <strong>MIT</strong>
+          <span>typed Python package, offline demo</span>
+        </div>
+      </section>
+
+      <section class="section architecture" id="architecture">
+        <div class="section-head reveal">
+          <div class="section-kicker">Architecture</div>
+          <h2>A deterministic gate around probabilistic model calls.</h2>
+          <p>
+            ICA keeps orchestration explicit and auditable. The model or provider
+            estimates ambiguity, risk, hypotheses, and candidate clarifiers; the
+            local policy applies a thresholded routing decision before final
+            generation.
+          </p>
+        </div>
+
+        <div class="architecture-layout">
+          <figure class="diagram-panel reveal">
+            <img src="diagrams/architecture.png" alt="Intent Compression Architecture system diagram">
+            <figcaption>Repository architecture diagram: hypotheses, scoring, routing, and conditioned generation.</figcaption>
+          </figure>
+
+          <div class="route-panel reveal">
+            <div class="route-tabs" role="tablist" aria-label="ICA routes">
+              <button type="button" role="tab" aria-selected="true" aria-controls="route-answer" id="tab-answer">Answer</button>
+              <button type="button" role="tab" aria-selected="false" aria-controls="route-clarify" id="tab-clarify">Clarify</button>
+              <button type="button" role="tab" aria-selected="false" aria-controls="route-premise" id="tab-premise">Premise</button>
+              <button type="button" role="tab" aria-selected="false" aria-controls="route-redirect" id="tab-redirect">Redirect</button>
+            </div>
+            <article class="route-content active" id="route-answer" role="tabpanel" aria-labelledby="tab-answer">
+              <h3>answer_direct</h3>
+              <p>Use when ambiguity is low or a clarifier would not materially change the answer.</p>
+            </article>
+            <article class="route-content" id="route-clarify" role="tabpanel" aria-labelledby="tab-clarify" hidden>
+              <h3>ask_clarifier</h3>
+              <p>Ask the smallest neutral question that collapses the relevant intent space.</p>
+            </article>
+            <article class="route-content" id="route-premise" role="tabpanel" aria-labelledby="tab-premise" hidden>
+              <h3>premise_check</h3>
+              <p>Surface a risky, false, or impossible premise before generating a misleading answer.</p>
+            </article>
+            <article class="route-content" id="route-redirect" role="tabpanel" aria-labelledby="tab-redirect" hidden>
+              <h3>refuse_redirect</h3>
+              <p>Refuse or redirect when confirmation would not make literal compliance safe.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section policy section-band" id="policy">
+        <div class="policy-grid">
+          <div class="reveal">
+            <div class="section-kicker">Decision Policy</div>
+            <h2>The ask-vs-answer rule is a threshold, not a vibe.</h2>
+            <p>
+              Each candidate clarification gets a practical utility score. The
+              policy asks only when the best adjusted utility clears the domain
+              threshold <code>tau</code>. That keeps clarification from becoming
+              a personality trait or a blanket delay.
+            </p>
+          </div>
+          <div class="formula-card reveal" aria-label="Expected utility formula">
+            <p>Ask iff</p>
+            <strong>max<sub>q</sub> U(q | x) &gt; τ</strong>
+            <span>where utility balances answer quality, safety, token cost, latency, and user friction.</span>
+          </div>
+        </div>
+
+        <div class="matrix reveal" aria-label="Risk and ambiguity routing matrix">
+          <div class="matrix-cell head">Ambiguity</div>
+          <div class="matrix-cell head">Risk</div>
+          <div class="matrix-cell head">Default action</div>
+          <div class="matrix-cell">Low</div>
+          <div class="matrix-cell">Low</div>
+          <div class="matrix-cell accent-green">Answer directly</div>
+          <div class="matrix-cell">High</div>
+          <div class="matrix-cell">Low</div>
+          <div class="matrix-cell accent-blue">Ask one high-value clarifier</div>
+          <div class="matrix-cell">Low</div>
+          <div class="matrix-cell">High</div>
+          <div class="matrix-cell accent-amber">Premise-check or safe redirect</div>
+          <div class="matrix-cell">High</div>
+          <div class="matrix-cell">High</div>
+          <div class="matrix-cell accent-red">Constrain, clarify, or refuse</div>
+        </div>
+      </section>
+
+      <section class="section evidence" id="evidence">
+        <div class="section-head reveal">
+          <div class="section-kicker">Pilot Evidence</div>
+          <h2>Early clarification beat delayed repair on the ambiguity-heavy stress set.</h2>
+          <p>
+            The repository includes a 25-prompt single-rater pilot. It is not a
+            production-wide claim, but it is a reproducible first pass showing
+            how ICA changes tokens-to-resolution, retries, and ambiguity discovery.
+          </p>
+        </div>
+
+        <div class="chart-grid reveal">
+          <div class="chart-card">
+            <h3>Mean correctness</h3>
+            <div class="bar-row"><span>Direct</span><div><i style="width:68%"></i></div><b>3.40</b></div>
+            <div class="bar-row"><span>ICA</span><div><i style="width:98%"></i></div><b>4.88</b></div>
+          </div>
+          <div class="chart-card">
+            <h3>Mean clarity</h3>
+            <div class="bar-row"><span>Direct</span><div><i style="width:69%"></i></div><b>3.44</b></div>
+            <div class="bar-row"><span>ICA</span><div><i style="width:98%"></i></div><b>4.88</b></div>
+          </div>
+          <div class="chart-card">
+            <h3>Retry count</h3>
+            <div class="bar-row"><span>Direct</span><div><i style="width:76%"></i></div><b>0.76</b></div>
+            <div class="bar-row"><span>ICA</span><div><i style="width:4%"></i></div><b>0.00</b></div>
+          </div>
+          <div class="chart-card">
+            <h3>Utility proxy</h3>
+            <div class="bar-row"><span>Direct</span><div><i style="width:76%"></i></div><b>3.13</b></div>
+            <div class="bar-row"><span>Repair</span><div><i style="width:85%"></i></div><b>3.52</b></div>
+            <div class="bar-row"><span>ICA</span><div><i style="width:100%"></i></div><b>4.13</b></div>
+          </div>
+        </div>
+
+        <div class="evidence-notes reveal">
+          <p><strong>Clarification hit rate:</strong> 0.95</p>
+          <p><strong>Over-clarification rate:</strong> 0.05</p>
+          <p><strong>Screenshot misuse risk:</strong> 3 of 25 direct baseline cases</p>
+          <p><strong>Limitation:</strong> single-rater pilot with evaluator-supplied clarifier replies.</p>
+        </div>
+      </section>
+
+      <section class="section implementation section-band" id="implementation">
+        <div class="section-head reveal">
+          <div class="section-kicker">Implementation</div>
+          <h2>Not just a paper: the repo ships a typed Python core.</h2>
+          <p>
+            <code>ica-core</code> is a provider-agnostic package with a deterministic
+            offline mock provider, Pydantic schemas, a CLI demo, local validation
+            scripts, and privacy-conscious tracing.
+          </p>
+        </div>
+
+        <div class="code-layout">
+          <div class="terminal reveal" aria-label="Install and run commands">
+            <div class="terminal-top">
+              <span></span><span></span><span></span>
+            </div>
+            <pre><code>python -m pip install -r requirements.txt
+python -m pip install -e ".[dev]"
+python -m pytest
+
+ica "Does Elon Musk post right-wing propaganda?"
+python -m ica_core.cli --json "Make this API faster."</code></pre>
+          </div>
+          <div class="contract reveal">
+            <h3>Structured decision contract</h3>
+            <ul>
+              <li><code>ambiguity_score</code> and <code>risk_score</code> stay separate.</li>
+              <li><code>intent_hypotheses</code> capture competing meanings.</li>
+              <li><code>candidate_clarifiers</code> carry expected gain and cost.</li>
+              <li><code>decision</code> selects the route before generation.</li>
+              <li><code>answer_constraints</code> condition the final response.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="section artifacts reveal" id="artifacts">
+        <div class="section-kicker">Repository Artifacts</div>
+        <h2>Everything needed to inspect, run, and extend the idea.</h2>
+        <div class="artifact-grid">
+          <a href="README.md"><span>README</span><strong>Architecture argument and usage guide</strong></a>
+          <a href="spec/clarifier_output.schema.json"><span>Schema</span><strong>Machine-readable clarifier contract</strong></a>
+          <a href="spec/clarifier_output.example.json"><span>Example</span><strong>Reference valid decision payload</strong></a>
+          <a href="eval/pilot_results.md"><span>Pilot</span><strong>25-prompt benchmark report</strong></a>
+          <a href="examples/ambiguous_prompts.csv"><span>Prompts</span><strong>Ambiguity stress-test set</strong></a>
+          <a href="CHANGELOG.md"><span>Changelog</span><strong>Release history and project state</strong></a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Intent Compression Architecture by Paul Maddison.</p>
+      <div>
+        <a href="mailto:paul.maddison.delimeg@gmail.com">Email</a>
+        <a href="https://www.linkedin.com/in/paul-maddison-b83395175/">LinkedIn</a>
+        <a href="https://github.com/PaulJMaddison/intent-compression-architecture">GitHub</a>
+      </div>
+    </footer>
+
+    <script src="assets/site.js"></script>
+  </body>
+</html>
