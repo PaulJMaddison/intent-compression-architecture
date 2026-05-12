@@ -1033,6 +1033,41 @@ Not just by having more conversations, but by converting ambiguous conversations
 
 ---
 
+## Future extension: ICA for coding agents
+
+The same control-layer idea may apply to coding agents.
+In chat, ICA prevents the model from answering before intent is resolved.
+In agents, ICA can preserve the original task intent while filtering tool-output noise, failed attempts, and conversational drift across many steps.
+
+For an agent, the compressed state packet might look like:
+
+```text
+original user goal
+current verified state
+known constraints
+failed attempts to avoid
+next best action
+```
+
+This is a natural extension because coding agents often fail by losing the original goal, overreacting to the latest terminal output, repeating failed fixes, or carrying stale assumptions through a long context window.
+An ICA-style agent controller would keep the model focused on the task state that matters rather than the full conversational residue.
+
+The coding-agent version should be tested separately.
+Useful metrics would include:
+
+- total tokens to green tests
+- number of failed loops
+- number of repeated mistakes
+- time to resolution
+- final test pass rate
+- unnecessary code churn
+- whether the original user intent was preserved
+
+This repository does **not** yet benchmark coding-agent performance.
+The extension is included because it is a natural, testable bridge from clarification-first chat to intent-preserving agent orchestration.
+
+---
+
 ## Safety and refusal behavior
 
 ICA is not only an efficiency pattern.

@@ -653,7 +653,18 @@ def build_docx(diagram_path: Path) -> Path:
         "The architecture is copyable. The live, high-volume intent-resolution feedback loop is much harder to copy. That is why ICA can be understood not only as a UX improvement, but as a route by which market share becomes model-quality advantage."
     )
 
-    heading("11. Adversarial and deployment guidance")
+    heading("11. Future extension: coding agents")
+    document.add_paragraph(
+        "The same control-layer idea may apply to coding agents. In chat, ICA prevents the model from answering before intent is resolved. In agents, ICA can preserve the original task intent while filtering tool-output noise, failed attempts, and conversational drift across many steps."
+    )
+    document.add_paragraph(
+        "For an agent, the compressed state packet might include the original user goal, current verified state, known constraints, failed attempts to avoid, and next best action. That packet can keep the model focused on the task state that matters rather than the full conversational residue."
+    )
+    document.add_paragraph(
+        "This repository does not yet benchmark coding-agent performance. The extension is a natural, testable bridge from clarification-first chat to intent-preserving agent orchestration, with metrics such as tokens to green tests, repeated mistakes, time to resolution, final pass rate, unnecessary code churn, and preservation of original intent."
+    )
+
+    heading("12. Adversarial and deployment guidance")
     document.add_paragraph(
         "ICA is most useful when deployed as a policy layer around an existing model stack. The orchestration logic should be explicit and testable, while uncertainty is isolated to model outputs and external-system calls such as retrieval, APIs, or mutable external state."
     )
@@ -664,7 +675,7 @@ def build_docx(diagram_path: Path) -> Path:
         "A clarification layer is also a control surface. It can be probed by users who try to trigger or suppress clarification, launder harmful intent through ambiguity, steer unsafe options through clarifier replies, inject desired routing labels, overload the controller with many plausible intents, or poison future traces. Mitigations include internal thresholds, independent risk scoring, post-reply safety re-scoring, policy-controlled hypothesis generation, capped hypothesis sets with an other bucket, and separation between online traces and trusted training labels."
     )
 
-    heading("12. Conclusion")
+    heading("13. Conclusion")
     document.add_paragraph(
         "ICA is a credible architecture pattern because it defines a control-layer problem that engineers can implement: infer intent hypotheses, quantify ambiguity, route by expected utility, narrow intent before generation when doing so is worth the cost, and build systems that are more precise, more reliable, easier to defend, and often cheaper to operate once wrong-funnel conversations are counted properly."
     )
