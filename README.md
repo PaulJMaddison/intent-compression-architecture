@@ -2,7 +2,8 @@
 
 **Author:** Paul Maddison  
 **Email:** paul.maddison.delimeg@gmail.com  
-**LinkedIn:** https://www.linkedin.com/in/paul-maddison-b83395175/
+**LinkedIn:** https://www.linkedin.com/in/paul-maddison-b83395175/  
+**Website:** https://pauljmaddison.github.io/intent-compression-architecture/
 
 **Short name:** ICA
 
