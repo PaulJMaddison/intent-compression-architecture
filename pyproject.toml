@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ica-core"
+version = "0.1.0"
+description = "Clarification-first intent compression control layer for LLM systems."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+  { name = "Paul Maddison" }
+]
+keywords = [
+  "llm",
+  "intent-resolution",
+  "clarification",
+  "orchestration",
+  "expected-utility"
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Typing :: Typed"
+]
+dependencies = [
+  "pydantic>=2.7,<3",
+  "pydantic-settings>=2.2,<3"
+]
+
+[project.optional-dependencies]
+dev = [
+  "build>=1.2,<2",
+  "jsonschema>=4,<5",
+  "pytest>=8,<9"
+]
+
+[project.scripts]
+ica = "ica_core.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/PaulJMaddison/intent-compression-architecture"
+Repository = "https://github.com/PaulJMaddison/intent-compression-architecture"
+Issues = "https://github.com/PaulJMaddison/intent-compression-architecture/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+ica_core = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

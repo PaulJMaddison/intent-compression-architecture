@@ -27,6 +27,7 @@
 
 ```bash
 python -m pip install -r requirements.txt
+python -m pip install -e ".[dev]"
 bash scripts/validate_local.sh
 ```
 
@@ -36,10 +37,121 @@ For a more exact replay of the currently documented environment, use `requiremen
 On Windows PowerShell, use:
 
 ```powershell
+python -m pip install -r requirements.txt
+python -m pip install -e ".[dev]"
 ./scripts/validate_local.ps1
 ```
 
 If you need to target a specific interpreter, set `PYTHON` first and then run the same helper script.
+
+---
+
+## Python package: `ica-core`
+
+This repository now includes `ica-core`, a small Python package that implements the ICA control layer as reusable library code.
+It is not a hosted SaaS product and it is not tied to one model provider.
+The package is intended to be the local foundation for:
+
+- a Python library used inside LLM applications
+- a later self-hosted gateway layer, such as `ica-gateway`
+- provider adapters that return the structured ICA decision contract
+
+The package follows the architecture described in this repository:
+
+- model calls estimate ambiguity, risk, intent hypotheses, and candidate clarifiers
+- deterministic policy code applies the ask-vs-answer rule
+- ambiguity and risk are represented separately
+- false-premise and refusal paths are distinct from ordinary clarification
+- traces are opt-in and privacy-conscious by default
+
+Clarification-first control matters because an apparently cheap first answer can be expensive if it sends the conversation into a correction funnel.
+ICA therefore measures cost at the level of **tokens per resolved intent**: the total token and interaction cost required to reach the user's intended task, including clarification or repair turns.
+The pilot/eval material in [`eval/`](eval/) illustrates this comparison at a small benchmark scale; it should be treated as an initial reproducible pilot, not a universal production claim.
+For the deeper design rationale, see the proposal PDF and the architecture sections below.
+
+### Install for development
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+Run the test suite:
+
+```bash
+python -m pytest
+```
+
+Build the package locally:
+
+```bash
+python -m build
+```
+
+### CLI demo
+
+After editable install, run:
+
+```bash
+ica "Does Elon Musk post right-wing propaganda?"
+```
+
+Or without relying on your shell `PATH`:
+
+```bash
+python -m ica_core.cli "Make this API faster."
+python -m ica_core.cli --json "Make this API faster."
+python -m ica_core.cli --trace --trace-path ica-traces.jsonl "Make this API faster."
+python examples/cli_demo.py
+```
+
+The default provider is the offline mock provider, so the CLI and tests do not require live API access.
+Live OpenAI/xAI calls are not validated in this release because no real provider API key is configured.
+
+### Python API
+
+```python
+from ica_core import IntentCompressor, MockIntentProvider, PolicyConfig
+
+compressor = IntentCompressor(
+    provider=MockIntentProvider(),
+    policy_config=PolicyConfig(tau=0.15),
+)
+
+decision = compressor.process(
+    "Make this API faster.",
+    trace_id="demo-001",
+    metadata={"domain": "coding"},
+)
+
+print(decision.decision)
+print(decision.clarifying_question)
+```
+
+### Provider support
+
+Current provider support is intentionally conservative:
+
+- `mock`: implemented, deterministic, offline, suitable for tests and demos
+- OpenAI/xAI/other providers: not bundled yet; the provider interface is ready for adapters that implement `generate_structured`
+
+Provider API key settings are available for future adapters using the providers' normal environment variable names, such as `OPENAI_API_KEY` and `XAI_API_KEY`.
+No real API key is hardcoded or required.
+
+### Tracing and privacy
+
+Tracing is off by default.
+When enabled with `--trace`, `ica-core` writes local JSONL traces and stores a query hash by default, not the raw query.
+You can choose redacted or raw query capture explicitly with `--trace-query`, and request metadata is excluded unless `--trace-metadata` is set.
+This is meant to support the clarification-data-flywheel idea without pretending that local traces solve retention, consent, or privacy policy by themselves.
+
+### Current limitations
+
+- The mock provider uses simple heuristics, not calibrated production probability estimates.
+- The expected-utility policy uses a practical approximation documented in code.
+- There is no hosted gateway, persistence service, or provider SDK adapter yet.
+- The pilot benchmark is useful for design validation, but broader multi-rater and production-instrumented evaluation is still needed.
+
+Release notes are tracked in [`CHANGELOG.md`](CHANGELOG.md).
 
 ---
 
@@ -196,6 +308,76 @@ Plain English:
 
 > Ask the clarification question with the highest expected utility, but only if its expected gain clears a threshold.
 
+### Estimating entropy and utility in practice
+
+The schema fields `intent_entropy_bits` and `intent_hypotheses[].probability` should not be read as magical model self-knowledge.
+In a production implementation, they should be treated as calibrated control-layer estimates.
+
+A practical estimator has four stages:
+
+1. **Hypothesis generation**
+Generate a small set of mutually exclusive, answer-changing intent hypotheses.
+The hypotheses should include an `other` bucket so the distribution is not forced to overfit the visible options.
+
+2. **Probability estimation**
+Estimate $P(I_i \mid x)$ using a calibrated classifier, model logprob features where available, retrieval/context features, or repeated low-temperature samples clustered by semantic equivalence.
+The first version can use model-estimated probabilities, but it should be instrumented as an uncalibrated prior rather than accepted as ground truth.
+
+3. **Calibration**
+Calibrate the probabilities against labeled ambiguity data using Brier score, expected calibration error, and reliability plots.
+If the model says a hypothesis has probability 0.7, roughly 70% of those cases should resolve to that hypothesis on held-out traffic.
+
+4. **Entropy calculation**
+Compute entropy mechanically:
+
+$$
+H(I \mid x) = - \sum_i P(I_i \mid x)\log_2 P(I_i \mid x)
+$$
+
+The mock provider in this repository demonstrates the final mechanical step by computing entropy from declared hypothesis probabilities.
+That is sufficient for tests, but not sufficient for production.
+Production ICA needs calibration data, confidence intervals, and regular audits of cases where the user reply selects `other` or contradicts all proposed hypotheses.
+
+Candidate utility should be estimated in the same spirit.
+The implementation in [`src/ica_core/policy.py`](src/ica_core/policy.py) treats provider-estimated clarifier benefit as only one input, then applies deterministic local adjustments for token cost, latency cost, turn friction, and optional risk adjustment.
+That keeps the ask-vs-answer decision auditable even when the upstream probability estimates are noisy.
+
+### Calibrating tau
+
+The threshold $\tau$ should be learned or tuned, not chosen by taste.
+The simplest offline calibration is a grid search over a labeled benchmark:
+
+$$
+\tau^* = \arg\min_{\tau} \sum_j L(\text{route}_{\tau}(x_j), y_j)
+$$
+
+Where the loss includes at least:
+
+- cost of unnecessary clarification
+- cost of answering directly when clarification was needed
+- cost of refusing or over-constraining when a safe direct answer was possible
+- token, latency, and abandonment costs
+- safety or compliance cost for risky wrong answers
+
+A rough starting heuristic:
+
+- **coding and data tasks:** lower $\tau$ when a short clarifier can prevent a long wrong implementation
+- **high-volume support:** higher $\tau$ when users abandon easily and the cost of a wrong answer is low
+- **medical, legal, finance, and safety-sensitive advice:** lower $\tau$ for missing context that changes safe guidance, but route clear policy violations directly to refusal or safe redirection
+- **creative or brainstorming tasks:** higher $\tau$ unless the ambiguity materially changes the deliverable
+
+Worked example:
+
+- best clarifier benefit estimate: `0.36`
+- token/latency/friction cost: `0.11`
+- risk adjustment: `0.04`
+- adjusted utility: `0.36 - 0.11 + 0.04 = 0.29`
+- if domain $\tau = 0.15$, ask
+- if domain $\tau = 0.35$, answer directly or state assumptions
+
+The main operational dashboard should track the threshold's two failure modes:
+over-clarification when $\tau$ is too low, and silent wrong-funnel answers when $\tau$ is too high.
+
 That threshold is important.
 It lets the same architecture behave differently across domains:
 
@@ -307,6 +489,29 @@ The legend is embedded directly in the figure so the diagram remains understanda
 
 ---
 
+## Positioning against prior work
+
+ICA is closest to work on selective clarification for ambiguous questions, but it makes a different architecture claim.
+
+- [CLAM: Selective Clarification for Ambiguous Questions with Generative Language Models](https://arxiv.org/abs/2212.07769) shows that language models can be prompted to detect ambiguity, ask clarifying questions, and answer after clarification.
+- [CLAMBER: A Benchmark of Identifying and Clarifying Ambiguous Information Needs in Large Language Models](https://arxiv.org/abs/2405.12063) evaluates whether LLMs can identify ambiguous user queries and ask useful clarifying questions, and reports that current models still struggle even with CoT and few-shot prompting.
+- [AmbigQA](https://arxiv.org/abs/2004.10645) frames ambiguity in open-domain QA as a task of finding plausible answers and rewriting questions to resolve ambiguity.
+- [ReAct](https://arxiv.org/abs/2210.03629) interleaves reasoning and actions so models can gather information and update plans during task execution.
+- [Self-Consistency](https://arxiv.org/abs/2203.11171) and semantic-entropy work such as [Semantic Uncertainty](https://arxiv.org/abs/2302.09664) show that sampling and semantic clustering can expose uncertainty signals in generated reasoning or answers.
+
+ICA's intended contribution is narrower and more software-architectural:
+
+- it turns clarification into a pre-generation routing contract rather than a prompting behavior alone
+- it separates ambiguity, risk, utility, and final answer generation into inspectable stages
+- it uses expected utility and a calibrated threshold to decide when not to ask
+- it treats clarification traces as structured intent-resolution data for improving the controller over time
+- it defines counter-metrics such as over-clarification, false direct answer, false refusal, and silent-failure proxy
+
+So ICA does not claim that clarification is new.
+The claim is that clarification should be engineered as a calibrated control layer with measurable routing decisions.
+
+---
+
 ## Implementation contract
 
 To make ICA directly buildable, the control layer should emit a structured decision object rather than a free-form paragraph.
@@ -322,7 +527,7 @@ Reference example:
 Validation command:
 
 ```bash
-python -m jsonschema spec/clarifier_output.schema.json -i spec/clarifier_output.example.json
+python scripts/validate_schema.py
 ```
 
 The schema uses a canonical repo URL as its `$id`, and the example is intended to be machine-valid rather
@@ -331,7 +536,7 @@ than illustrative only.
 This check can be run locally:
 
 ```bash
-python -m jsonschema spec/clarifier_output.schema.json -i spec/clarifier_output.example.json
+python scripts/validate_schema.py
 ```
 
 Local validation is the canonical reproducibility path for this repository.
@@ -550,6 +755,7 @@ scoring, billed token capture, and real latency measurement.
 
 ```bash
 python -m pip install -r requirements.txt
+python -m pip install -e ".[dev]"
 ```
 
 For a more exact rerun of the currently documented package set:
@@ -576,7 +782,13 @@ If you want to run the individual steps manually instead of the helper script:
 
 ```bash
 python -m py_compile eval/build_pilot_report.py scripts/build_repo_artifacts.py
-python -m jsonschema spec/clarifier_output.schema.json -i spec/clarifier_output.example.json
+python scripts/validate_schema.py
+python -m pytest
+python -m build
+python -m ica_core.cli --help
+python -m ica_core.cli "Does Elon Musk post right-wing propaganda?" --provider mock --dry-run
+python -m ica_core.cli "Does Elon Musk post right-wing propaganda?" --provider mock --json
+python examples/cli_demo.py
 python eval/build_pilot_report.py
 ```
 
@@ -657,6 +869,19 @@ Every clarification interaction can produce a structured trace:
 
 `ambiguous query -> candidate intents -> clarifying question -> user reply -> resolved intent -> final outcome`
 
+The architecture should make that trace explicit:
+
+| Trace field | Why it matters |
+| --- | --- |
+| `query` | Original ambiguity surface. |
+| `intent_hypotheses` | Candidate meanings the controller considered. |
+| `hypothesis_probabilities` | Calibratable estimates, not final truth. |
+| `candidate_clarifiers` | Questions available to the policy, including rejected ones. |
+| `decision_threshold` | The $\tau$ used at decision time. |
+| `selected_route` | Answer, clarify, premise-check, or refuse/redirect. |
+| `user_reply` | Direct supervision for the hidden intent variable when clarification is asked. |
+| `final_outcome` | Whether the route improved correctness, clarity, safety, cost, or satisfaction. |
+
 That trace is more valuable than an ordinary chat log because it captures the missing hidden variable in many failed AI interactions:
 
 > **what the user actually meant**
@@ -685,6 +910,18 @@ It is:
 - more usage generates more clarification data
 
 That is a clarification data flywheel.
+
+This is still an architecture only if the system actually captures and acts on the traces.
+The required mechanism is:
+
+1. log traces with privacy controls and product-specific retention rules
+2. label resolved intent and final outcome from user reply, follow-up behavior, explicit ratings, or evaluator review
+3. recalibrate hypothesis probabilities and $\tau$ per domain
+4. retrain the clarification policy on both successful clarifiers and cases where the system should not have asked
+5. deploy policy changes through A/B tests that watch both success metrics and counter-metrics
+
+Without that loop, the moat claim should be weakened to a UX pattern.
+With that loop at significant scale, the moat is the calibrated policy and ambiguity coverage, not the visible act of asking a question.
 
 The copyable layer includes:
 
@@ -729,6 +966,26 @@ Safer example:
 > "I can't help with abusive or exploitative content about real tragedies. If you'd like, I can help with a factual summary, a fictional satire with no real victims, or a discussion of why the framing is harmful."
 
 This is better than asking the user to reconfirm harmful intent when the safe response would not change.
+
+---
+
+## Adversarial analysis
+
+A clarification layer creates a new control surface.
+It should be tested as one.
+
+Likely attacks and mitigations:
+
+| Attack | Failure mode | Mitigation |
+| --- | --- | --- |
+| Threshold probing | Users learn how to trigger or suppress clarification. | Keep the exact threshold internal, rate-limit repeated probes, and randomize audit prompts in evaluation traffic. |
+| Ambiguity laundering | A harmful request is phrased as harmless ambiguity. | Score intent risk independently from ambiguity and route clear violations to refusal/redirect even when a clarifier is available. |
+| Clarifier steering | The user selects the option that unlocks a desired unsafe path. | Do not treat the user's clarification as permission to violate policy; re-score risk after the reply. |
+| Option injection | The prompt asks the system to include a specific clarifier option. | Generate hypotheses from policy-controlled instructions and reject user-specified routing labels unless independently supported. |
+| Overload attack | The user creates many plausible intents to force delay or expensive analysis. | Cap hypotheses and clarifiers, preserve an `other` bucket, and fall back to a direct assumptions-based answer for low-risk cases. |
+| Data-poisoning traces | Users repeatedly supply misleading clarifier replies to shape future policy. | Separate online product traces from trusted training labels; downweight anomalous clusters and require review for sensitive domains. |
+
+The important design point is that clarification should narrow uncertainty, not delegate safety or truthfulness to the user.
 
 ---
 

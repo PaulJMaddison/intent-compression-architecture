@@ -108,6 +108,35 @@ Important controls:
 - keep retrieval/tool access fixed across conditions
 - do not give ICA privileged hidden facts beyond the clarifier reply
 - log whether the safe response would have been the same with or without clarification
+- keep the scorer blind to the route when possible, or use independent raters to reduce circularity
+- pre-register which prompts are ambiguity-heavy so the observed clarification rate is not mistaken for production traffic
+
+---
+
+## Utility scoring
+
+The pilot utility score is a proxy, not a direct measurement of user utility.
+It is operationalized in [`build_pilot_report.py`](build_pilot_report.py) as:
+
+```text
+quality = (correctness + clarity + safety) / 3
+utility_proxy = quality - 0.01 * total_tokens - 0.5 * retries
+```
+
+This makes the reported utility comparison transparent:
+the score rewards judged final-answer quality and penalizes token cost and retry burden.
+It does not claim to measure satisfaction, abandonment, wall-clock latency, or production revenue impact.
+
+To avoid circularity in the next benchmark:
+
+- separate the person or process that supplies clarifier replies from the person scoring final answers
+- score direct, repaired-direct, and ICA final answers using the same rubric
+- include route-blind review where feasible
+- report inter-rater agreement for correctness, clarity, safety, and clarifier neutrality
+- keep a separate threshold-tuning split so tau is not optimized on the same cases used for headline results
+
+The repaired-baseline column intentionally uses the same clarified final-answer target as ICA only when repair was needed.
+That equalizes final quality where possible, while the utility proxy still penalizes delayed clarification through repair tokens and retries.
 
 ---
 

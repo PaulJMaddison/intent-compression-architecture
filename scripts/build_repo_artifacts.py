@@ -504,7 +504,18 @@ def build_docx(diagram_path: Path) -> Path:
         "This formulation makes the unknown user reply explicit by taking an expectation over possible clarification responses. The domain threshold allows the same architecture to be tuned differently for coding, medical, legal, finance, or customer-support use cases."
     )
 
-    heading("3. Compression interpretation")
+    heading("3. Estimation and calibration")
+    document.add_paragraph(
+        "The schema fields intent_entropy_bits and intent_hypotheses[].probability are not meant to be accepted as magical model self-knowledge. In production they should be calibrated control-layer estimates: generate mutually exclusive answer-changing intent hypotheses, include an other bucket, estimate probabilities from a calibrated classifier or semantic clusters of repeated samples, and then compute entropy mechanically as -sum p log2 p."
+    )
+    document.add_paragraph(
+        "Candidate utility should be treated the same way. The repository policy module uses provider-estimated clarifier benefit as one input, then applies deterministic local adjustments for token cost, latency cost, turn friction, and optional risk adjustment. That keeps the ask-vs-answer decision auditable even when upstream estimates are noisy."
+    )
+    document.add_paragraph(
+        "Tau should be tuned, not guessed. The simplest calibration is a grid search on held-out labeled prompts that minimizes the combined loss from unnecessary clarification, false direct answers, false refusals, token cost, latency, abandonment, and safety risk. Operational dashboards should watch both failure modes: over-clarification when tau is too low and silent wrong-funnel answers when tau is too high."
+    )
+
+    heading("4. Compression interpretation")
     document.add_paragraph(
         "ICA treats ambiguity as entropy over possible user intents. Before clarification, the system reasons over H(I | x). After clarification q and user reply r, the system reasons over H(I | x, q, r). The expected value of clarification is the reduction in intent entropy, tempered by interaction cost."
     )
@@ -512,7 +523,7 @@ def build_docx(diagram_path: Path) -> Path:
         "This is why the term intent compression is mathematically defensible: the controller narrows the intent distribution before generation rather than letting the answering model hedge across multiple meanings."
     )
 
-    heading("4. Routing policy")
+    heading("5. Routing policy")
     table = document.add_table(rows=5, cols=4)
     table.style = "Table Grid"
     table.alignment = WD_TABLE_ALIGNMENT.LEFT
@@ -538,8 +549,16 @@ def build_docx(diagram_path: Path) -> Path:
         "A practical implication is that clarification is not always the right response to risk. Sometimes the cleanest and safest route is a direct refusal with a helpful redirect."
     )
 
+    heading("6. Prior-art positioning")
+    for text in [
+        "ICA is closest to selective-clarification and ambiguous-question-answering work such as CLAM, CLAMBER, and AmbigQA. It also relates to ReAct-style agent loops and uncertainty methods such as self-consistency and semantic entropy.",
+        "The contribution claimed here is narrower and more architectural: clarification is specified as a pre-generation routing contract with explicit ambiguity, risk, utility, threshold, route, and counter-metric fields. The novelty is not asking questions; it is engineering ask-vs-answer as a calibrated control layer.",
+        "Primary references: CLAM (arxiv.org/abs/2212.07769), CLAMBER (arxiv.org/abs/2405.12063), AmbigQA (arxiv.org/abs/2004.10645), ReAct (arxiv.org/abs/2210.03629), Self-Consistency (arxiv.org/abs/2203.11171), and Semantic Uncertainty (arxiv.org/abs/2302.09664).",
+    ]:
+        document.add_paragraph(text)
+
     document.add_page_break()
-    heading("5. Implementation contract")
+    heading("7. Implementation contract")
     document.add_paragraph(
         "The control layer should emit a structured decision object rather than a free-form paragraph. This proposal includes a JSON schema and reference example in spec/clarifier_output.schema.json and spec/clarifier_output.example.json."
     )
@@ -561,7 +580,7 @@ def build_docx(diagram_path: Path) -> Path:
         run.font.name = "Consolas"
         run.font.size = Pt(9.5)
 
-    heading("6. Hidden baseline cost")
+    heading("8. Hidden baseline cost")
     document.add_paragraph(
         "A short first answer is not necessarily an efficient answer. In ambiguous prompts, a baseline system can choose the wrong interpretation, give a broad or misleading answer, and force the user into a correction funnel before the real issue is finally exposed."
     )
@@ -572,7 +591,7 @@ def build_docx(diagram_path: Path) -> Path:
         "For that reason, ICA should be evaluated on tokens to resolved intent, definition-discovery turn, correction-funnel depth, and user correction burden, not just on the cost of the first assistant response."
     )
 
-    heading("7. Evaluation package")
+    heading("9. Evaluation package")
     document.add_paragraph(
         "The repository now includes a benchmark prompt set, an evaluation protocol, a sample reporting format, and a first-pass pilot benchmark. The evaluation compares not only direct one-shot answers, but also direct answers followed by the repair funnel when the first answer misses the intended meaning. The next credibility jump is a multi-rater or live-user benchmark."
     )
@@ -601,10 +620,19 @@ def build_docx(diagram_path: Path) -> Path:
     document.add_paragraph(
         "Key primary metrics include first assistant-message tokens, total tokens to resolved intent, definition-discovery turn, retry count, correctness, clarity, and premise handling. Key counter-metrics include over-clarification rate, false direct-answer rate, silent-failure proxy, false refusal rate, and clarification bias."
     )
+    document.add_paragraph(
+        "The pilot utility proxy is transparent rather than implicit: quality equals the mean of correctness, clarity, and safety; utility_proxy equals quality minus 0.01 times total tokens minus 0.5 times retries. This proxy does not measure live satisfaction, abandonment, wall-clock latency, or revenue impact."
+    )
+    document.add_paragraph(
+        "The circularity risk is real. The current pilot is single-rater and uses evaluator-supplied clarification replies. The next benchmark should separate reply generation from scoring, use route-blind or independent review where feasible, report inter-rater agreement, and tune tau on a separate split from the headline evaluation."
+    )
 
-    heading("8. Strategic implication")
+    heading("10. Strategic implication")
     document.add_paragraph(
         "At large scale, ICA is not only a reliability pattern. It becomes a clarification data flywheel. Each ambiguous query, clarifier, user reply, and final outcome produces a structured intent-resolution trace that is more valuable than an ordinary chat log because it captures what the user actually meant."
+    )
+    document.add_paragraph(
+        "That data advantage only exists if the system logs and acts on the traces: capture candidate intents, probabilities, rejected clarifiers, tau, selected route, user reply, and final outcome; label resolved intent with privacy controls; recalibrate probabilities and thresholds per domain; retrain the policy on both good clarifiers and cases where the system should not have asked; and deploy changes through A/B tests that watch success metrics and counter-metrics."
     )
     document.add_paragraph(
         "Public OpenAI disclosures in 2026 describe ChatGPT as having more than 900 million weekly active users and more than 50 million consumer subscribers. At that scale, even rare ambiguity classes become common in absolute terms. A provider with that distribution can improve ambiguity detection, ask-vs-answer thresholds, neutral clarifier wording, risk handling, and future base-model behavior using real-world traces rather than only synthetic or expert-labeled data."
@@ -613,15 +641,18 @@ def build_docx(diagram_path: Path) -> Path:
         "The architecture is copyable. The live, high-volume intent-resolution feedback loop is much harder to copy. That is why ICA can be understood not only as a UX improvement, but as a route by which market share becomes model-quality advantage."
     )
 
-    heading("9. Deployment guidance")
+    heading("11. Adversarial and deployment guidance")
     document.add_paragraph(
         "ICA is most useful when deployed as a policy layer around an existing model stack. The orchestration logic should be explicit and testable, while uncertainty is isolated to model outputs and external-system calls such as retrieval, APIs, or mutable external state."
     )
     document.add_paragraph(
         "The controller should log ambiguity score, risk score, candidate clarifiers, expected utility estimates, final route, and user reply when applicable. Those traces are the data needed to improve the control layer over time."
     )
+    document.add_paragraph(
+        "A clarification layer is also a control surface. It can be probed by users who try to trigger or suppress clarification, launder harmful intent through ambiguity, steer unsafe options through clarifier replies, inject desired routing labels, overload the controller with many plausible intents, or poison future traces. Mitigations include internal thresholds, independent risk scoring, post-reply safety re-scoring, policy-controlled hypothesis generation, capped hypothesis sets with an other bucket, and separation between online traces and trusted training labels."
+    )
 
-    heading("10. Conclusion")
+    heading("12. Conclusion")
     document.add_paragraph(
         "ICA is a credible architecture pattern because it defines a control-layer problem that engineers can implement: infer intent hypotheses, quantify ambiguity, route by expected utility, narrow intent before generation when doing so is worth the cost, and build systems that are more precise, more reliable, easier to defend, and often cheaper to operate once wrong-funnel conversations are counted properly."
     )
@@ -651,7 +682,7 @@ def build_docx(diagram_path: Path) -> Path:
 
     heading("Pilot signal snapshot", level=2)
     document.add_paragraph(
-        "In the current 25-prompt pilot, direct first-pass answers required a repair funnel in 19 cases. On that same prompt set, ICA reduced mean definition-discovery turn from 2.6 to 1.0 and reduced mean total tokens to satisfactory resolution from 71.68 on the repaired baseline path to 62.08."
+        "In the current 25-prompt pilot, direct first-pass answers required a repair funnel in 19 cases. On that same prompt set, ICA reduced mean definition-discovery turn from 2.6 to 1.0 and reduced mean total tokens to satisfactory resolution from 91.68 on the repaired baseline path to 78.04."
     )
     document.add_paragraph(
         "That is the narrower but stronger efficiency claim: early clarification is not always shorter than a one-shot answer, but it is often cheaper than discovering the same ambiguity after the system has already committed to the wrong semantic funnel."
