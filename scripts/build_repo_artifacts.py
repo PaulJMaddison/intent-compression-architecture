@@ -458,9 +458,9 @@ def build_docx(diagram_path: Path) -> Path:
     callout = document.add_paragraph(style="ICA Callout")
     callout.alignment = WD_ALIGN_PARAGRAPH.LEFT
     callout.add_run(
-        "Executive summary. ICA is a pre-generation control layer and control plane for intent. It decides whether clarification is worth the cost "
-        "before the model commits to an answer or an agent action. In chat, this prevents premature first answers from becoming misleading evidence. "
-        "In agentic workflows, the same idea can preserve the original goal while filtering tool-output noise, failed attempts, and conversational drift."
+        "Executive summary. ICA is a control plane for intent. It sits before generation or agent action and prevents unresolved intent from becoming "
+        "the first answer, the wrong edit, the repeated tool loop, or the screenshot someone uses as evidence. The central claim is that LLM systems "
+        "need better intent control, not only bigger context windows."
     )
 
     def heading(text: str, level: int = 1) -> None:
@@ -470,10 +470,11 @@ def build_docx(diagram_path: Path) -> Path:
 
     heading("1. Architecture overview")
     for text in [
-        "A common failure mode in LLM systems is unresolved ambiguity. Users often ask questions that admit multiple plausible interpretations, while the system is optimized to answer immediately. The result is a broad first answer, a user correction, and an unnecessary second pass.",
-        "ICA inserts a control layer between user input and final generation. The layer estimates likely intent hypotheses, scores ambiguity and risk, and decides whether clarification improves the expected outcome enough to justify the extra turn.",
+        "ICA changes the default posture of an LLM system from answer-first to intent-first. It turns ambiguity into a measured control signal, clarification into an expected-utility decision, interaction history into compact state, user corrections into structured intent-resolution data, and the first answer into the outcome of a routing policy rather than an unverified guess.",
+        "A common failure mode in LLM systems is unresolved intent. Users ask questions that admit multiple plausible interpretations, while the system is optimized to answer immediately. The result is a broad first answer, a misleading first answer, a user correction, or no correction at all because the user leaves.",
+        "ICA inserts a control layer between user input and final generation or action. The layer estimates likely intent hypotheses, scores ambiguity and risk, and decides whether clarification improves the expected outcome enough to justify the extra turn.",
         "The same failure becomes more expensive in agents. In a coding agent, unresolved or drifting intent can produce wrong edits, repeated failed fixes, noisy tool loops, and expensive context growth. ICA frames this as an intent-control problem rather than merely a larger-context problem.",
-        "That makes the agentic use case economically important: a drifted coding agent does not only spend extra tokens, it spends extra tokens taking the wrong actions. A compact task-state packet can reduce both tokens per step and wasted steps.",
+        "That makes the agentic use case economically important: a drifted coding agent does not only spend extra tokens, it spends extra tokens taking the wrong actions. A compact task-state packet attacks both costs at once: fewer tokens per step and fewer wasted steps.",
     ]:
         document.add_paragraph(text)
 
@@ -654,18 +655,18 @@ def build_docx(diagram_path: Path) -> Path:
         "The architecture is copyable. The live, high-volume intent-resolution feedback loop is much harder to copy. That is why ICA can be understood not only as a UX improvement, but as a route by which market share becomes model-quality advantage."
     )
 
-    heading("11. Future extension: coding agents")
+    heading("11. ICA for coding agents")
     document.add_paragraph(
-        "The same control-layer idea may apply to coding agents. In chat, ICA prevents the model from answering before intent is resolved. In agents, ICA can preserve the original task intent while filtering tool-output noise, failed attempts, and conversational drift across many steps."
+        "The same control-layer idea applies directly to coding agents. In chat, ICA prevents the model from answering before intent is resolved. In agents, ICA preserves the original task intent while filtering tool-output noise, failed attempts, and conversational drift across many steps."
     )
     document.add_paragraph(
-        "In that framing, ICA becomes a control plane for agentic systems. It does not replace the model's reasoning or tool use; it governs the state the model should reason over: original goal, verified facts, current constraints, failed paths, and the next useful action."
+        "In that framing, ICA is a control plane for agentic systems. It does not replace the model's reasoning or tool use; it governs the state the model should reason over: original goal, verified facts, current constraints, failed paths, and the next useful action."
     )
     document.add_paragraph(
         "For an agent, the compressed state packet might include the original user goal, current verified state, known constraints, failed attempts to avoid, and next best action. That packet can keep the model focused on the task state that matters rather than the full conversational residue."
     )
     document.add_paragraph(
-        "This repository does not yet benchmark coding-agent performance. The extension is a natural, testable bridge from clarification-first chat to intent-preserving agent orchestration, with metrics such as tokens to green tests, repeated mistakes, time to resolution, final pass rate, unnecessary code churn, and preservation of original intent. If validated on coding-agent benchmarks, this could improve agent unit economics by reducing repeated context, failed loops, and intent drift."
+        "This repository does not yet benchmark coding-agent performance. That is the next evidence step, not a separate idea. The bridge from clarification-first chat to intent-preserving agent orchestration is the same mechanism: compress the uncertainty, keep the load-bearing intent, and remove noise before the next model call. Useful metrics include tokens to green tests, repeated mistakes, time to resolution, final pass rate, unnecessary code churn, and preservation of original intent."
     )
 
     heading("12. Adversarial and deployment guidance")
@@ -681,7 +682,7 @@ def build_docx(diagram_path: Path) -> Path:
 
     heading("13. Conclusion")
     document.add_paragraph(
-        "ICA is a credible architecture pattern because it defines a control-layer problem that engineers can implement: infer intent hypotheses, quantify ambiguity, route by expected utility, narrow intent before generation when doing so is worth the cost, and build systems that are more precise, more reliable, easier to defend, and often cheaper to operate once wrong-funnel conversations are counted properly."
+        "ICA is a credible architecture pattern because it defines the missing control-layer problem engineers can implement: infer intent hypotheses, quantify ambiguity, route by expected utility, narrow intent before generation or action when doing so is worth the cost, and build systems that are more precise, more reliable, easier to defend, and often cheaper to operate once wrong-funnel conversations and wasted agent loops are counted properly."
     )
 
     heading("Appendix A. Starter benchmark pack")

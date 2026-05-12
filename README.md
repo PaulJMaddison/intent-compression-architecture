@@ -1,4 +1,4 @@
-# Intent Compression Architecture: A Control Plane for Intent in Reliable LLM Systems
+# Intent Compression Architecture: The Intent Control Plane for Reliable LLM Systems
 
 **Author:** Paul Maddison  
 **Email:** paul.maddison.delimeg@gmail.com  
@@ -8,24 +8,43 @@
 
 ## Abstract
 
-Intent Compression Architecture (ICA) is a **pre-generation control layer** for LLM systems.
-Its job is to decide whether ambiguity should be resolved before the model commits to an answer.
-More generally, ICA is a **control plane for intent**: it keeps the model focused on the meaning that matters before answer generation or agent action.
+Intent Compression Architecture (ICA) is a **control plane for intent**.
+It sits before generation or agent action and prevents unresolved user intent from becoming the first answer, the wrong edit, the repeated tool loop, or the screenshot someone uses as evidence.
+
+The core idea is that modern LLM systems do not only need bigger context windows.
+They need better intent control.
+ICA treats ambiguity as an engineering signal: when a word, premise, or task goal carries enough uncertainty to change the answer, the system should compress the uncertainty into a small clarification or task-state update before acting.
 
 The key claim is simple:
 
 > **Ask a clarifying question only when the expected improvement in answer quality or safety exceeds the cost of another turn.**
 
-That framing turns clarification from a vague conversational instinct into an engineering policy.
-ICA is therefore not "ask more questions."
-It is a routing, scoring, and control problem that sits between user input and final generation.
+That turns clarification from a vague conversational habit into a routing, scoring, and control policy.
+ICA is not "ask more questions."
+It is the layer that decides when answering now is cheaper, and when answering now creates a bigger downstream cost.
 
 ---
 
-## The crux: the first answer becomes evidence
+## What ICA changes
 
-The core failure is not just that the model may need a retry.
-The deeper problem is that many users never reach the retry.
+ICA changes the default posture of an LLM system from **answer-first** to **intent-first**.
+
+- It turns ambiguity into a measured control signal instead of hidden conversational debt.
+- It turns clarification into an expected-utility decision instead of a personality trait.
+- It turns long, noisy interaction history into compact state the model can act on.
+- It turns user corrections into structured intent-resolution data.
+- It turns the first answer from an unverified guess into an outcome of a routing policy.
+
+That is the real architecture claim.
+The visible behavior may be a short clarifying question.
+The deeper system is anti-drift intent management before the model speaks, acts, edits code, refuses, or calls a tool.
+
+---
+
+## The crux
+
+The core failure is not merely that the model may need a retry.
+The deeper failure is that many users never reach the retry.
 
 A user asks an ambiguous question.
 The assistant answers under one implied meaning.
@@ -50,16 +69,25 @@ When a load-bearing word changes the answer, the system should resolve the word 
 
 ---
 
-## Why this matters for agents and coding agents
+## Why this is bigger than clarification
 
-The same failure becomes more expensive in agentic systems.
-In a normal chat, unresolved intent can produce a misleading answer.
-In a coding agent, unresolved or drifting intent can produce wrong edits, repeated failed fixes, noisy tool loops, and expensive context growth.
+ICA starts with clarification, but the architecture is broader than chat UX.
+It is a general pattern for keeping a model aligned to the meaning that matters while the interaction evolves.
 
-ICA is therefore not only a clarification layer.
-It is an **intent control plane** for long-running model workflows.
+That matters in three places:
 
-For coding agents, the core problem is not just context length.
+1. **Chat**
+A single ambiguous word can produce an answer that is cautious, plausible, and still misleading.
+
+2. **Safety and truthfulness**
+A premature answer can become a quote-mining surface: "the AI agrees with me," even when the model never resolved the key definition.
+
+3. **Agentic and coding systems**
+The same unresolved intent becomes more expensive when the model can take actions.
+A coding agent can drift from the original task, overreact to terminal noise, repeat failed fixes, and burn tokens while modifying the wrong thing.
+
+This is where ICA becomes a **control plane for agentic systems**.
+For agents, the problem is not only context length.
 It is semantic noise:
 
 - stale terminal output
@@ -68,7 +96,7 @@ It is semantic noise:
 - user corrections that shift wording but not the original goal
 - long histories that make the model attend to the wrong thing
 
-An ICA-style agent controller can keep a compact task-state packet in front of the model:
+An ICA controller keeps a compact task-state packet in front of the model:
 
 ```text
 original user goal
@@ -81,19 +109,18 @@ next best action
 That is the agentic version of intent compression.
 Instead of re-sending a messy transcript and hoping the model remembers what matters, the controller preserves the goal, filters semantic noise, and refreshes the model with the state needed for the next action.
 
-This is the economic reason the agentic use case matters.
-Coding agents are where reliability and unit cost collide: a drifted agent does not only spend extra tokens, it spends extra tokens taking the wrong actions.
-If ICA keeps task state compact while preserving goal fidelity, it attacks both costs at once: fewer tokens per step and fewer wasted steps.
+This is why the idea matters right now.
+Coding agents are where reliability and unit cost collide.
+A drifted agent does not only spend extra tokens; it spends extra tokens taking the wrong actions.
+ICA attacks both costs at once: fewer tokens per step and fewer wasted steps.
 
-The current repo does not yet prove coding-agent performance.
-But it makes the next benchmark obvious:
+The current benchmark evidence is focused on clarification-first chat.
+The same control layer creates a direct coding-agent benchmark:
 
 - standard agent with full chat/tool history
 - versus ICA-guided agent with compressed intent and task state
 
 Useful measurements would include tokens to green tests, repeated mistake count, loop depth, time to resolution, code churn, and whether the original user goal survived the run.
-If validated there, ICA becomes more than a reliability pattern for chat.
-It becomes infrastructure for lower-drift, lower-cost agentic systems.
 
 ---
 
@@ -114,11 +141,11 @@ Ambiguity and intent risk should be scored separately before generation.
 5. **Strategic claim**
 At large scale, clarification traces become structured intent-resolution data.
 
-6. **Moat claim**
-The architecture is copyable; the trained clarification policy and clarification data flywheel are harder to copy.
+6. **Agentic claim**
+The same compression principle becomes task-state control for long-running agents: preserve the original goal, filter semantic noise, reduce drift, and lower wasted action loops.
 
-7. **Agentic claim**
-The same compression principle can preserve task intent across long-running agent workflows, reducing drift, repeated mistakes, and unnecessary context growth.
+7. **Moat claim**
+The architecture is visible; the trained clarification policy, threshold calibration, ambiguity coverage, and intent-resolution data flywheel are harder to copy.
 
 ---
 
@@ -1084,13 +1111,13 @@ Not just by having more conversations, but by converting ambiguous conversations
 
 ---
 
-## Future extension: ICA for coding agents
+## ICA for coding agents
 
-The same control-layer idea may apply to coding agents.
+The same control-layer idea applies directly to coding agents.
 In chat, ICA prevents the model from answering before intent is resolved.
-In agents, ICA can preserve the original task intent while filtering tool-output noise, failed attempts, and conversational drift across many steps.
+In agents, ICA preserves the original task intent while filtering tool-output noise, failed attempts, and conversational drift across many steps.
 
-In that framing, ICA becomes a control plane for agentic systems.
+In that framing, ICA is a control plane for agentic systems.
 It does not replace the model's reasoning or tool use.
 It governs the state that the model should reason over: original goal, verified facts, current constraints, failed paths, and the next useful action.
 
@@ -1107,7 +1134,7 @@ next best action
 This is a natural extension because coding agents often fail by losing the original goal, overreacting to the latest terminal output, repeating failed fixes, or carrying stale assumptions through a long context window.
 An ICA-style agent controller would keep the model focused on the task state that matters rather than the full conversational residue.
 
-The coding-agent version should be tested separately.
+The coding-agent version should be benchmarked separately.
 Useful metrics would include:
 
 - total tokens to green tests
@@ -1119,8 +1146,8 @@ Useful metrics would include:
 - whether the original user intent was preserved
 
 This repository does **not** yet benchmark coding-agent performance.
-The extension is included because it is a natural, testable bridge from clarification-first chat to intent-preserving agent orchestration.
-If validated on coding-agent benchmarks, this could improve agent unit economics by reducing repeated context, failed loops, and intent drift.
+That is the next evidence step, not a separate idea.
+The bridge from clarification-first chat to intent-preserving agent orchestration is the same mechanism: compress the uncertainty, keep the load-bearing intent, and remove noise before the next model call.
 
 ---
 

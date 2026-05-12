@@ -9,9 +9,10 @@
 - Regenerated the pilot CSV/Markdown report and proposal DOCX/PDF around the updated metrics and canonical example.
 - Added test coverage for the compression-optimized propaganda clarifier.
 - Documented that the next proof step is live API-instrumented benchmarking with billed token and latency capture.
-- Added a conservative future-extension bridge for applying ICA to coding-agent task-state compression.
+- Added a coding-agent task-state compression bridge for applying ICA to long-running agent workflows.
 - Added "control plane for intent" positioning for reliable LLM and agentic systems.
 - Promoted the agentic/coding-agent use case near the top of the README and proposal framing.
+- Rewrote the README opening so ICA leads as an intent-control architecture rather than a cautious clarification feature.
 
 This release still uses the offline mock provider for package validation. Live OpenAI/xAI provider adapters are intentionally left as the next implementation milestone.
 
