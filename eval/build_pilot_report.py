@@ -144,6 +144,7 @@ def build_rows() -> list[dict]:
             "clarification_bias_score": case["clarification_bias_score"],
             "final_answer_changed": case["final_answer_changed"],
             "silent_failure_proxy": silent_failure_proxy,
+            "early_exit_silent_failure_risk": silent_failure_proxy,
             "repair_or_silent_failure_risk": repair_or_silent_failure_risk,
             "over_clarification": case["over_clarification"],
             "unnecessary_clarification": case["unnecessary_clarification"],
@@ -171,6 +172,7 @@ def build_rows() -> list[dict]:
             ),
             "notes": case["notes"],
         }
+        row["screenshot_misuse_risk"] = screenshot_misuse_risk(row)
         rows.append(row)
     return rows
 
@@ -199,6 +201,31 @@ def route_distribution(rows: list[dict]) -> dict[str, int]:
     for row in rows:
         dist[row["decision_type"]] = dist.get(row["decision_type"], 0) + 1
     return dist
+
+
+def screenshot_misuse_risk(row: dict) -> bool:
+    """Proxy for first answers that can be quote-mined after early exit.
+
+    This is intentionally conservative. The risk is highest when a direct
+    answer plausibly leaves the user in the wrong semantic funnel and the
+    domain is one where a screenshot can be reused as social proof, advice, or
+    evidence for a contested claim.
+    """
+
+    screenshotable_domains = {
+        "public_reasoning",
+        "research",
+        "finance",
+        "legal",
+        "medical",
+        "safety",
+        "hiring",
+    }
+    return bool(
+        row["silent_failure_proxy"]
+        and row["domain"] in screenshotable_domains
+        and row["final_answer_changed"]
+    )
 
 
 def write_markdown(rows: list[dict]) -> None:
@@ -248,6 +275,8 @@ def write_markdown(rows: list[dict]) -> None:
         f"| Clarification / repair rate | 0.0 | {bool_rate(rows, 'needs_repair')} | {round(len(clarifier_rows) / len(rows), 2)} |",
         f"| Repair-or-silent-failure risk | {bool_rate(rows, 'repair_or_silent_failure_risk')} | {bool_rate(rows, 'repair_or_silent_failure_risk')} | n/a |",
         f"| Silent-failure proxy | {bool_rate(rows, 'silent_failure_proxy')} | {bool_rate(rows, 'silent_failure_proxy')} | n/a |",
+        f"| Early-exit silent-failure risk | {bool_rate(rows, 'early_exit_silent_failure_risk')} | {bool_rate(rows, 'early_exit_silent_failure_risk')} | n/a |",
+        f"| Screenshot misuse risk | {bool_rate(rows, 'screenshot_misuse_risk')} | {bool_rate(rows, 'screenshot_misuse_risk')} | n/a |",
         f"| Clarification hit rate | n/a | n/a | {bool_rate(rows, 'final_answer_changed', lambda row: row['clarifier_asked'])} |",
         f"| Over-clarification rate | n/a | n/a | {bool_rate(rows, 'over_clarification', lambda row: row['clarifier_asked'])} |",
         f"| Unnecessary clarification rate | n/a | n/a | {bool_rate(rows, 'unnecessary_clarification', lambda row: row['clarifier_asked'])} |",
@@ -275,11 +304,12 @@ def write_markdown(rows: list[dict]) -> None:
             "- The smallest gains came from already-safe refusals and from cases like `AP-013` where a clarifier added tailoring but did not fundamentally change the safe answer.",
             "- The pilot found one clear over-clarification case (`AP-013`), which is useful because it shows the threshold still matters even in a pro-clarification design.",
             f"- Baseline first-pass answers required a repair funnel in {sum(1 for row in rows if row['needs_repair'])} of {len(rows)} cases, and {sum(1 for row in rows if row['repair_or_silent_failure_risk'])} of {len(rows)} cases carried repair-or-silent-failure risk.",
+            f"- {sum(1 for row in rows if row['screenshot_misuse_risk'])} of {len(rows)} cases carried screenshot-misuse risk: the first direct answer could plausibly be reused after early exit as evidence for a contested claim or unsafe interpretation.",
             "",
             "## Per-prompt comparison",
             "",
-            "| ID | Route | Repair needed | Direct one-shot tokens | Direct repaired tokens | ICA tokens | Discovery turn D->I | Silent failure proxy | Final answer changed | Notes |",
-            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+            "| ID | Route | Repair needed | Direct one-shot tokens | Direct repaired tokens | ICA tokens | Discovery turn D->I | Silent failure proxy | Screenshot misuse risk | Final answer changed | Notes |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
         ]
     )
 
@@ -289,6 +319,7 @@ def write_markdown(rows: list[dict]) -> None:
             f"{row['direct_answer_tokens']} | {row['direct_repair_tokens']} | {row['ica_tokens']} | "
             f"{row['definition_discovery_turn_direct']} -> {row['definition_discovery_turn_ica']} | "
             f"{'yes' if row['silent_failure_proxy'] else 'no'} | "
+            f"{'yes' if row['screenshot_misuse_risk'] else 'no'} | "
             f"{'yes' if row['final_answer_changed'] else 'no'} | {row['notes']} |"
         )
 
@@ -305,6 +336,7 @@ def write_markdown(rows: list[dict]) -> None:
             "- A one-shot direct answer can look cheaper only because it stops before resolution. That is the wrong comparison for ambiguous prompts.",
             "- Once the benchmark includes the repair funnel, ICA is the cleaner comparison: short clarifier first versus long wrong answer first.",
             "- Efficiency claims should therefore be framed as **tokens to satisfactory resolution**, not just tokens in the first assistant message.",
+            "- The human-behavior risk is early exit: many users will not push the model through a repair funnel, and screenshots of the first answer can be reused as social proof for a misleading interpretation.",
             "- The strategic UX benefit is not only fewer retries, but fewer users being forced to discover the ambiguous term by arguing with the model.",
             "- The next best upgrade is a multi-rater run or an API-instrumented benchmark with actual latency and billed-token capture.",
         ]

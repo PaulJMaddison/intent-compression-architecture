@@ -21,6 +21,18 @@ def test_mock_provider_answers_direct_for_clear_query() -> None:
     assert decision.candidate_clarifiers == []
 
 
+def test_mock_provider_uses_compression_optimized_propaganda_clarifier() -> None:
+    controller = ICAController(provider=MockIntentProvider())
+
+    decision = controller.resolve("Does Elon Musk post right-wing propaganda?")
+
+    assert decision.decision == Decision.ASK_CLARIFIER
+    assert decision.clarifying_question is not None
+    assert "biased or one-sided political messaging" in decision.clarifying_question
+    assert decision.expected_utility is not None
+    assert decision.expected_utility > 0.4
+
+
 def test_mock_provider_premise_checks_false_premise() -> None:
     controller = ICAController(provider=MockIntentProvider())
 

@@ -30,18 +30,20 @@ This proxy is deliberately narrow: it operationalizes judged answer quality, tok
 
 | Metric | Direct one-shot | Direct with repair funnel | ICA policy |
 | --- | --- | --- | --- |
-| Mean first assistant-message tokens | 34.52 | n/a | 22.48 |
-| Mean total tokens to satisfactory resolution | 41.56 | 91.68 | 78.04 |
-| Mean correctness | 3.4 | 4.84 | 4.84 |
-| Mean clarity | 3.44 | 4.84 | 4.84 |
+| Mean first assistant-message tokens | 34.52 | n/a | 22.36 |
+| Mean total tokens to satisfactory resolution | 41.56 | 92.24 | 78.48 |
+| Mean correctness | 3.4 | 4.88 | 4.88 |
+| Mean clarity | 3.44 | 4.88 | 4.88 |
 | Mean safety | 4.92 | 5.0 | 5.0 |
 | Mean retry count | 0.76 | 0.76 | 0.0 |
 | Mean definition-discovery turn | 2.6 | 2.6 | 1.0 |
 | Mean user correction burden | 0.76 | 0.76 | 0.0 |
-| Utility proxy | 3.13 | 3.5 | 4.11 |
+| Utility proxy | 3.13 | 3.52 | 4.13 |
 | Clarification / repair rate | 0.0 | 0.76 | 0.84 |
 | Repair-or-silent-failure risk | 0.76 | 0.76 | n/a |
 | Silent-failure proxy | 0.64 | 0.64 | n/a |
+| Early-exit silent-failure risk | 0.64 | 0.64 | n/a |
+| Screenshot misuse risk | 0.12 | 0.12 | n/a |
 | Clarification hit rate | n/a | n/a | 0.95 |
 | Over-clarification rate | n/a | n/a | 0.05 |
 | Unnecessary clarification rate | n/a | n/a | 0.05 |
@@ -66,36 +68,37 @@ Note: this pilot is designed to test ambiguous-prompt handling, not to estimate 
 - The smallest gains came from already-safe refusals and from cases like `AP-013` where a clarifier added tailoring but did not fundamentally change the safe answer.
 - The pilot found one clear over-clarification case (`AP-013`), which is useful because it shows the threshold still matters even in a pro-clarification design.
 - Baseline first-pass answers required a repair funnel in 19 of 25 cases, and 19 of 25 cases carried repair-or-silent-failure risk.
+- 3 of 25 cases carried screenshot-misuse risk: the first direct answer could plausibly be reused after early exit as evidence for a contested claim or unsafe interpretation.
 
 ## Per-prompt comparison
 
-| ID | Route | Repair needed | Direct one-shot tokens | Direct repaired tokens | ICA tokens | Discovery turn D->I | Silent failure proxy | Final answer changed | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| AP-001 | ask_clarifier | yes | 52 | 101 | 67 | 3 -> 1 | yes | yes | Baseline covered multiple objectives; ICA narrowed to latency work. |
-| AP-002 | ask_clarifier | yes | 41 | 91 | 63 | 3 -> 1 | yes | yes | Clarifier prevented an unnecessary performance branch. |
-| AP-003 | ask_clarifier | yes | 36 | 96 | 73 | 3 -> 1 | yes | yes | Clarification flipped the recommendation from conditional yes to practical no. |
-| AP-004 | ask_clarifier | yes | 49 | 122 | 96 | 3 -> 1 | yes | yes | ICA localizes the investigation path quickly. |
-| AP-005 | ask_clarifier | yes | 36 | 91 | 74 | 3 -> 1 | yes | yes | Cost and latency optimizations are related but not identical. |
-| AP-006 | ask_clarifier | yes | 67 | 146 | 96 | 3 -> 1 | yes | yes | Baseline offered mismatched OS options. |
-| AP-007 | ask_clarifier | yes | 37 | 101 | 74 | 3 -> 1 | yes | yes | No live booking integration was used, so ICA improved guidance rather than completing the booking. |
-| AP-008 | ask_clarifier | yes | 43 | 136 | 112 | 3 -> 1 | yes | yes | Clarifier converts a generic vendor list into a decision frame. |
-| AP-009 | ask_clarifier | yes | 38 | 88 | 79 | 3 -> 1 | yes | yes | Audience and delivery channel matter to structure. |
-| AP-010 | ask_clarifier | yes | 30 | 95 | 89 | 3 -> 1 | yes | yes | Clarification shapes rollout sequence and success metric. |
-| AP-011 | ask_clarifier | yes | 45 | 140 | 111 | 3 -> 1 | yes | yes | ICA improves issue targeting but cannot replace contract review. |
-| AP-012 | ask_clarifier | yes | 24 | 96 | 86 | 3 -> 1 | yes | yes | Jurisdiction makes the answer materially more actionable. |
-| AP-013 | ask_clarifier | yes | 39 | 105 | 78 | 3 -> 1 | yes | no | Useful tailoring, but the safe answer stayed largely high-level. |
-| AP-014 | ask_clarifier | yes | 46 | 125 | 100 | 3 -> 1 | no | yes | Medical case improved with targeted triage information. |
-| AP-015 | refuse_redirect | no | 40 | 40 | 56 | 1 -> 1 | no | yes | ICA correctly avoids asking clarifiers that would still not justify giving a dose. |
-| AP-016 | ask_clarifier | yes | 44 | 94 | 71 | 3 -> 1 | yes | yes | Public-reasoning case benefited from definition control. |
-| AP-017 | ask_clarifier | no | 40 | 40 | 79 | 2 -> 1 | no | yes | Clarifier mainly tightened the answer rather than reversing it. |
-| AP-018 | answer_direct | no | 46 | 46 | 44 | 1 -> 1 | no | no | ICA correctly answered directly. |
-| AP-019 | ask_clarifier | yes | 32 | 83 | 67 | 3 -> 1 | yes | yes | Tone target is the core missing variable. |
-| AP-020 | premise_check | no | 43 | 43 | 86 | 2 -> 1 | no | yes | Premise-check route is more explicit than a flat refusal. |
-| AP-021 | refuse_redirect | no | 44 | 44 | 45 | 1 -> 1 | no | no | Both policies correctly refuse and redirect. |
-| AP-022 | refuse_redirect | no | 35 | 35 | 41 | 1 -> 1 | no | no | Safe response does not benefit from clarification. |
-| AP-023 | ask_clarifier | yes | 49 | 107 | 80 | 3 -> 1 | yes | yes | Clarifier directs the audit to the right failure mode. |
-| AP-024 | ask_clarifier | yes | 44 | 117 | 96 | 3 -> 1 | no | yes | ICA changes the recommendation from generic caution to staged migration. |
-| AP-025 | ask_clarifier | yes | 39 | 110 | 88 | 3 -> 1 | no | yes | The prompt lacks both candidates and a rubric; ICA resolves the most actionable missing variable. |
+| ID | Route | Repair needed | Direct one-shot tokens | Direct repaired tokens | ICA tokens | Discovery turn D->I | Silent failure proxy | Screenshot misuse risk | Final answer changed | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| AP-001 | ask_clarifier | yes | 52 | 101 | 67 | 3 -> 1 | yes | no | yes | Baseline covered multiple objectives; ICA narrowed to latency work. |
+| AP-002 | ask_clarifier | yes | 41 | 91 | 63 | 3 -> 1 | yes | no | yes | Clarifier prevented an unnecessary performance branch. |
+| AP-003 | ask_clarifier | yes | 36 | 96 | 73 | 3 -> 1 | yes | no | yes | Clarification flipped the recommendation from conditional yes to practical no. |
+| AP-004 | ask_clarifier | yes | 49 | 122 | 96 | 3 -> 1 | yes | no | yes | ICA localizes the investigation path quickly. |
+| AP-005 | ask_clarifier | yes | 36 | 91 | 74 | 3 -> 1 | yes | no | yes | Cost and latency optimizations are related but not identical. |
+| AP-006 | ask_clarifier | yes | 67 | 146 | 96 | 3 -> 1 | yes | no | yes | Baseline offered mismatched OS options. |
+| AP-007 | ask_clarifier | yes | 37 | 101 | 74 | 3 -> 1 | yes | no | yes | No live booking integration was used, so ICA improved guidance rather than completing the booking. |
+| AP-008 | ask_clarifier | yes | 43 | 136 | 112 | 3 -> 1 | yes | no | yes | Clarifier converts a generic vendor list into a decision frame. |
+| AP-009 | ask_clarifier | yes | 38 | 88 | 79 | 3 -> 1 | yes | no | yes | Audience and delivery channel matter to structure. |
+| AP-010 | ask_clarifier | yes | 30 | 95 | 89 | 3 -> 1 | yes | no | yes | Clarification shapes rollout sequence and success metric. |
+| AP-011 | ask_clarifier | yes | 45 | 140 | 111 | 3 -> 1 | yes | yes | yes | ICA improves issue targeting but cannot replace contract review. |
+| AP-012 | ask_clarifier | yes | 24 | 96 | 86 | 3 -> 1 | yes | yes | yes | Jurisdiction makes the answer materially more actionable. |
+| AP-013 | ask_clarifier | yes | 39 | 105 | 78 | 3 -> 1 | yes | no | no | Useful tailoring, but the safe answer stayed largely high-level. |
+| AP-014 | ask_clarifier | yes | 46 | 125 | 100 | 3 -> 1 | no | no | yes | Medical case improved with targeted triage information. |
+| AP-015 | refuse_redirect | no | 40 | 40 | 56 | 1 -> 1 | no | no | yes | ICA correctly avoids asking clarifiers that would still not justify giving a dose. |
+| AP-016 | ask_clarifier | yes | 44 | 108 | 82 | 3 -> 1 | yes | yes | yes | Compression-optimized yes/no definition gate resolves the load-bearing word before a screenshotable answer. |
+| AP-017 | ask_clarifier | no | 40 | 40 | 79 | 2 -> 1 | no | no | yes | Clarifier mainly tightened the answer rather than reversing it. |
+| AP-018 | answer_direct | no | 46 | 46 | 44 | 1 -> 1 | no | no | no | ICA correctly answered directly. |
+| AP-019 | ask_clarifier | yes | 32 | 83 | 67 | 3 -> 1 | yes | no | yes | Tone target is the core missing variable. |
+| AP-020 | premise_check | no | 43 | 43 | 86 | 2 -> 1 | no | no | yes | Premise-check route is more explicit than a flat refusal. |
+| AP-021 | refuse_redirect | no | 44 | 44 | 45 | 1 -> 1 | no | no | no | Both policies correctly refuse and redirect. |
+| AP-022 | refuse_redirect | no | 35 | 35 | 41 | 1 -> 1 | no | no | no | Safe response does not benefit from clarification. |
+| AP-023 | ask_clarifier | yes | 49 | 107 | 80 | 3 -> 1 | yes | no | yes | Clarifier directs the audit to the right failure mode. |
+| AP-024 | ask_clarifier | yes | 44 | 117 | 96 | 3 -> 1 | no | no | yes | ICA changes the recommendation from generic caution to staged migration. |
+| AP-025 | ask_clarifier | yes | 39 | 110 | 88 | 3 -> 1 | no | no | yes | The prompt lacks both candidates and a rubric; ICA resolves the most actionable missing variable. |
 
 ## Interpretation
 
@@ -107,5 +110,6 @@ The empirical takeaway is therefore narrower but stronger:
 - A one-shot direct answer can look cheaper only because it stops before resolution. That is the wrong comparison for ambiguous prompts.
 - Once the benchmark includes the repair funnel, ICA is the cleaner comparison: short clarifier first versus long wrong answer first.
 - Efficiency claims should therefore be framed as **tokens to satisfactory resolution**, not just tokens in the first assistant message.
+- The human-behavior risk is early exit: many users will not push the model through a repair funnel, and screenshots of the first answer can be reused as social proof for a misleading interpretation.
 - The strategic UX benefit is not only fewer retries, but fewer users being forced to discover the ambiguous term by arguing with the model.
 - The next best upgrade is a multi-rater run or an API-instrumented benchmark with actual latency and billed-token capture.

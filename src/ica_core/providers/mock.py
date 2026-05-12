@@ -125,20 +125,23 @@ class MockIntentProvider:
                 CandidateClarifier(
                     id="q1",
                     question=(
-                        "When you say propaganda, do you mean persuasive political "
-                        "advocacy, coordinated deceptive messaging, or something else?"
+                        "Do you mean propaganda as in biased or one-sided political "
+                        "messaging intended to influence opinion?"
                     ),
                     expected_information_gain_bits=0.88,
-                    expected_utility=0.41,
-                    estimated_cost_tokens=22,
-                    estimated_latency_ms=1400,
+                    expected_utility=0.45,
+                    estimated_cost_tokens=15,
+                    estimated_latency_ms=1000,
                 ),
                 CandidateClarifier(
                     id="q2",
-                    question="Do you want a rhetorical analysis, a factual evidence assessment, or both?",
+                    question=(
+                        "Do you mean biased political messaging, coordinated "
+                        "deception, deliberate misinformation, or something else?"
+                    ),
                     expected_information_gain_bits=0.52,
-                    expected_utility=0.19,
-                    estimated_cost_tokens=19,
+                    expected_utility=0.22,
+                    estimated_cost_tokens=17,
                     estimated_latency_ms=1200,
                 ),
             ],

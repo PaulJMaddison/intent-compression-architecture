@@ -6,155 +6,6 @@
 
 **Short name:** ICA
 
----
-
-## Primary artifacts
-
-- Proposal PDF: [`ICA_Engineering_Design_Proposal1.pdf`](ICA_Engineering_Design_Proposal1.pdf)
-- Proposal DOCX source: [`ICA_Engineering_Design_Proposal1.docx`](ICA_Engineering_Design_Proposal1.docx)
-- Architecture diagram: [`diagrams/architecture.png`](diagrams/architecture.png)
-- Clarifier contract schema: [`spec/clarifier_output.schema.json`](spec/clarifier_output.schema.json)
-- Clarifier contract example: [`spec/clarifier_output.example.json`](spec/clarifier_output.example.json)
-- Benchmark prompt set: [`examples/ambiguous_prompts.csv`](examples/ambiguous_prompts.csv)
-- Evaluation protocol: [`eval/README.md`](eval/README.md)
-- Sample reporting format: [`eval/sample_results.md`](eval/sample_results.md)
-- Pilot benchmark report: [`eval/pilot_results.md`](eval/pilot_results.md)
-- Pilot benchmark data table: [`eval/pilot_results.csv`](eval/pilot_results.csv)
-
----
-
-## Quick start
-
-```bash
-python -m pip install -r requirements.txt
-python -m pip install -e ".[dev]"
-bash scripts/validate_local.sh
-```
-
-For a more exact replay of the currently documented environment, use `requirements.lock` instead of
-`requirements.txt`.
-
-On Windows PowerShell, use:
-
-```powershell
-python -m pip install -r requirements.txt
-python -m pip install -e ".[dev]"
-./scripts/validate_local.ps1
-```
-
-If you need to target a specific interpreter, set `PYTHON` first and then run the same helper script.
-
----
-
-## Python package: `ica-core`
-
-This repository now includes `ica-core`, a small Python package that implements the ICA control layer as reusable library code.
-It is not a hosted SaaS product and it is not tied to one model provider.
-The package is intended to be the local foundation for:
-
-- a Python library used inside LLM applications
-- a later self-hosted gateway layer, such as `ica-gateway`
-- provider adapters that return the structured ICA decision contract
-
-The package follows the architecture described in this repository:
-
-- model calls estimate ambiguity, risk, intent hypotheses, and candidate clarifiers
-- deterministic policy code applies the ask-vs-answer rule
-- ambiguity and risk are represented separately
-- false-premise and refusal paths are distinct from ordinary clarification
-- traces are opt-in and privacy-conscious by default
-
-Clarification-first control matters because an apparently cheap first answer can be expensive if it sends the conversation into a correction funnel.
-ICA therefore measures cost at the level of **tokens per resolved intent**: the total token and interaction cost required to reach the user's intended task, including clarification or repair turns.
-The pilot/eval material in [`eval/`](eval/) illustrates this comparison at a small benchmark scale; it should be treated as an initial reproducible pilot, not a universal production claim.
-For the deeper design rationale, see the proposal PDF and the architecture sections below.
-
-### Install for development
-
-```bash
-python -m pip install -e ".[dev]"
-```
-
-Run the test suite:
-
-```bash
-python -m pytest
-```
-
-Build the package locally:
-
-```bash
-python -m build
-```
-
-### CLI demo
-
-After editable install, run:
-
-```bash
-ica "Does Elon Musk post right-wing propaganda?"
-```
-
-Or without relying on your shell `PATH`:
-
-```bash
-python -m ica_core.cli "Make this API faster."
-python -m ica_core.cli --json "Make this API faster."
-python -m ica_core.cli --trace --trace-path ica-traces.jsonl "Make this API faster."
-python examples/cli_demo.py
-```
-
-The default provider is the offline mock provider, so the CLI and tests do not require live API access.
-Live OpenAI/xAI calls are not validated in this release because no real provider API key is configured.
-
-### Python API
-
-```python
-from ica_core import IntentCompressor, MockIntentProvider, PolicyConfig
-
-compressor = IntentCompressor(
-    provider=MockIntentProvider(),
-    policy_config=PolicyConfig(tau=0.15),
-)
-
-decision = compressor.process(
-    "Make this API faster.",
-    trace_id="demo-001",
-    metadata={"domain": "coding"},
-)
-
-print(decision.decision)
-print(decision.clarifying_question)
-```
-
-### Provider support
-
-Current provider support is intentionally conservative:
-
-- `mock`: implemented, deterministic, offline, suitable for tests and demos
-- OpenAI/xAI/other providers: not bundled yet; the provider interface is ready for adapters that implement `generate_structured`
-
-Provider API key settings are available for future adapters using the providers' normal environment variable names, such as `OPENAI_API_KEY` and `XAI_API_KEY`.
-No real API key is hardcoded or required.
-
-### Tracing and privacy
-
-Tracing is off by default.
-When enabled with `--trace`, `ica-core` writes local JSONL traces and stores a query hash by default, not the raw query.
-You can choose redacted or raw query capture explicitly with `--trace-query`, and request metadata is excluded unless `--trace-metadata` is set.
-This is meant to support the clarification-data-flywheel idea without pretending that local traces solve retention, consent, or privacy policy by themselves.
-
-### Current limitations
-
-- The mock provider uses simple heuristics, not calibrated production probability estimates.
-- The expected-utility policy uses a practical approximation documented in code.
-- There is no hosted gateway, persistence service, or provider SDK adapter yet.
-- The pilot benchmark is useful for design validation, but broader multi-rater and production-instrumented evaluation is still needed.
-
-Release notes are tracked in [`CHANGELOG.md`](CHANGELOG.md).
-
----
-
 ## Abstract
 
 Intent Compression Architecture (ICA) is a **pre-generation control layer** for LLM systems.
@@ -167,6 +18,34 @@ The key claim is simple:
 That framing turns clarification from a vague conversational instinct into an engineering policy.
 ICA is therefore not "ask more questions."
 It is a routing, scoring, and control problem that sits between user input and final generation.
+
+---
+
+## The crux: the first answer becomes evidence
+
+The core failure is not just that the model may need a retry.
+The deeper problem is that many users never reach the retry.
+
+A user asks an ambiguous question.
+The assistant answers under one implied meaning.
+The user leaves, accepts the answer, or screenshots it.
+That first answer can then be reused as evidence for a claim the model never actually resolved.
+
+The Elon Musk propaganda example is the minimal demo.
+The answer changes depending on whether `propaganda` means:
+
+- biased or one-sided political messaging
+- coordinated deceptive messaging
+- deliberate misinformation or manipulation
+
+Without clarification, a cautious answer can still be cropped into:
+
+```text
+ChatGPT agrees with me.
+```
+
+ICA exists to prevent that failure mode.
+When a load-bearing word changes the answer, the system should resolve the word before generating the answer.
 
 ---
 
@@ -579,6 +458,152 @@ It turns ICA from a conceptual recommendation into a concrete orchestration cont
 
 ---
 
+## Repository implementation
+
+The repo includes both the design proposal and a small Python package, `ica-core`, that implements the ICA control layer as reusable library code.
+This section is for readers who want to run or extend the implementation after understanding the argument.
+
+### Primary artifacts
+
+- Proposal PDF: [`ICA_Engineering_Design_Proposal1.pdf`](ICA_Engineering_Design_Proposal1.pdf)
+- Proposal DOCX source: [`ICA_Engineering_Design_Proposal1.docx`](ICA_Engineering_Design_Proposal1.docx)
+- Architecture diagram: [`diagrams/architecture.png`](diagrams/architecture.png)
+- Clarifier contract schema: [`spec/clarifier_output.schema.json`](spec/clarifier_output.schema.json)
+- Clarifier contract example: [`spec/clarifier_output.example.json`](spec/clarifier_output.example.json)
+- Benchmark prompt set: [`examples/ambiguous_prompts.csv`](examples/ambiguous_prompts.csv)
+- Evaluation protocol: [`eval/README.md`](eval/README.md)
+- Sample reporting format: [`eval/sample_results.md`](eval/sample_results.md)
+- Pilot benchmark report: [`eval/pilot_results.md`](eval/pilot_results.md)
+- Pilot benchmark data table: [`eval/pilot_results.csv`](eval/pilot_results.csv)
+
+### Quick start
+
+```bash
+python -m pip install -r requirements.txt
+python -m pip install -e ".[dev]"
+bash scripts/validate_local.sh
+```
+
+For a more exact replay of the currently documented environment, use `requirements.lock` instead of
+`requirements.txt`.
+
+On Windows PowerShell, use:
+
+```powershell
+python -m pip install -r requirements.txt
+python -m pip install -e ".[dev]"
+./scripts/validate_local.ps1
+```
+
+If you need to target a specific interpreter, set `PYTHON` first and then run the same helper script.
+
+### Python package: `ica-core`
+
+`ica-core` is not a hosted SaaS product and it is not tied to one model provider.
+The package is intended to be the local foundation for:
+
+- a Python library used inside LLM applications
+- a later self-hosted gateway layer, such as `ica-gateway`
+- provider adapters that return the structured ICA decision contract
+
+The package follows the architecture described in this repository:
+
+- model calls estimate ambiguity, risk, intent hypotheses, and candidate clarifiers
+- deterministic policy code applies the ask-vs-answer rule
+- ambiguity and risk are represented separately
+- false-premise and refusal paths are distinct from ordinary clarification
+- traces are opt-in and privacy-conscious by default
+
+Clarification-first control matters because an apparently cheap first answer can be expensive if it sends the conversation into a correction funnel.
+ICA therefore measures cost at the level of **tokens per resolved intent**: the total token and interaction cost required to reach the user's intended task, including clarification or repair turns.
+The pilot/eval material in [`eval/`](eval/) illustrates this comparison at a small benchmark scale; it should be treated as an initial reproducible pilot, not a universal production claim.
+
+### Install for development
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+Run the test suite:
+
+```bash
+python -m pytest
+```
+
+Build the package locally:
+
+```bash
+python -m build
+```
+
+### CLI demo
+
+After editable install, run:
+
+```bash
+ica "Does Elon Musk post right-wing propaganda?"
+```
+
+Or without relying on your shell `PATH`:
+
+```bash
+python -m ica_core.cli "Make this API faster."
+python -m ica_core.cli --json "Make this API faster."
+python -m ica_core.cli --trace --trace-path ica-traces.jsonl "Make this API faster."
+python examples/cli_demo.py
+```
+
+The default provider is the offline mock provider, so the CLI and tests do not require live API access.
+Live OpenAI/xAI calls are not validated in this release because no real provider API key is configured.
+
+### Python API
+
+```python
+from ica_core import IntentCompressor, MockIntentProvider, PolicyConfig
+
+compressor = IntentCompressor(
+    provider=MockIntentProvider(),
+    policy_config=PolicyConfig(tau=0.15),
+)
+
+decision = compressor.process(
+    "Make this API faster.",
+    trace_id="demo-001",
+    metadata={"domain": "coding"},
+)
+
+print(decision.decision)
+print(decision.clarifying_question)
+```
+
+### Provider support
+
+Current provider support is intentionally conservative:
+
+- `mock`: implemented, deterministic, offline, suitable for tests and demos
+- OpenAI/xAI/other providers: not bundled yet; the provider interface is ready for adapters that implement `generate_structured`
+
+Provider API key settings are available for future adapters using the providers' normal environment variable names, such as `OPENAI_API_KEY` and `XAI_API_KEY`.
+No real API key is hardcoded or required.
+
+### Tracing and privacy
+
+Tracing is off by default.
+When enabled with `--trace`, `ica-core` writes local JSONL traces and stores a query hash by default, not the raw query.
+You can choose redacted or raw query capture explicitly with `--trace-query`, and request metadata is excluded unless `--trace-metadata` is set.
+This is meant to support the clarification-data-flywheel idea without pretending that local traces solve retention, consent, or privacy policy by themselves.
+
+### Current limitations
+
+- The mock provider uses simple heuristics, not calibrated production probability estimates.
+- The expected-utility policy uses a practical approximation documented in code.
+- There is no hosted gateway, persistence service, or provider SDK adapter yet.
+- The pilot benchmark is useful for design validation, but broader multi-rater and production-instrumented evaluation is still needed.
+
+Release notes are tracked in [`CHANGELOG.md`](CHANGELOG.md).
+
+---
+
 ## Why this is also a software architecture issue
 
 This repo treats "agents" as software systems, not mystical entities.
@@ -679,6 +704,49 @@ A short wrong answer is not cheaper than a short clarifying question if the answ
 
 ---
 
+## Human-behavior risk: early exits and screenshot misuse
+
+The correction funnel is only visible when the user keeps arguing.
+Many real users will not.
+
+That creates a separate product and safety risk:
+
+1. the assistant answers under one implied definition
+2. the user leaves before the ambiguity is exposed
+3. the first answer is accepted, abandoned, or screenshotted
+4. the screenshot is reused as evidence for a contested claim
+
+The propaganda example demonstrates the pattern.
+If the user asks whether Elon Musk posts "right-wing propaganda," the answer depends heavily on whether "propaganda" means:
+
+- biased or one-sided political messaging
+- coordinated deceptive messaging
+- deliberate misinformation or manipulation
+
+A default answer can be cautious and technically reasonable while still failing the interaction.
+If the first answer can be cropped into "ChatGPT agrees this is not propaganda" or "ChatGPT agrees this is propaganda," the system has created a quote-mining surface.
+
+ICA's preferred route is to collapse the load-bearing definition before the answer:
+
+```text
+User: Is Elon Musk spreading right-wing propaganda?
+Assistant: Do you mean propaganda as in biased or one-sided political messaging intended to influence opinion?
+User: Yes.
+Assistant: Under that definition, some of his political posts can reasonably be described that way, while non-political posts and ordinary opinion should be separated from that claim.
+```
+
+The goal is not to force neutrality by vagueness.
+The goal is to prevent a screenshotable first answer from becoming social proof for a meaning the user and model never agreed on.
+
+The benchmark therefore tracks not only retries, but also:
+
+- early-exit silent-failure risk
+- screenshot misuse risk
+- definition-discovery turn
+- whether clarification materially changed the final answer
+
+---
+
 ## Evaluation package
 
 The next credibility jump is stronger empirical support: a multi-rater or live-user benchmark.
@@ -747,6 +815,8 @@ Counter-metrics:
 - percentage of clarifiers that changed the final answer
 - false-confidence rate
 - silent-failure proxy
+- early-exit silent-failure risk
+- screenshot misuse risk
 - percentage of ambiguous answers where the user never learns what term caused the mismatch
 
 Those counter-metrics matter because ICA can fail in both directions:

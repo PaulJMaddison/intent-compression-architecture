@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.0.0 - ICA proposal and canonical LLM-derived demo
+
+- Reframed the README so the human problem and core hook appear before package mechanics.
+- Added the canonical Elon Musk propaganda example based on real LLM interaction data.
+- Updated the mock provider, schema example, and pilot benchmark to use a compression-optimized yes/no definition clarifier.
+- Added explicit early-exit silent-failure and screenshot-misuse risk metrics to the evaluation package.
+- Regenerated the pilot CSV/Markdown report and proposal DOCX/PDF around the updated metrics and canonical example.
+- Added test coverage for the compression-optimized propaganda clarifier.
+- Documented that the next proof step is live API-instrumented benchmarking with billed token and latency capture.
+
+This release still uses the offline mock provider for package validation. Live OpenAI/xAI provider adapters are intentionally left as the next implementation milestone.
+
 ## v0.1.0 - Initial `ica-core` package release
 
 - Added a provider-agnostic ICA engine with deterministic policy routing.
