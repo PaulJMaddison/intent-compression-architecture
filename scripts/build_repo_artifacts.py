@@ -459,9 +459,8 @@ def build_docx(diagram_path: Path) -> Path:
     callout.alignment = WD_ALIGN_PARAGRAPH.LEFT
     callout.add_run(
         "Executive summary. ICA is a pre-generation control layer and control plane for intent. It decides whether clarification is worth the cost "
-        "before the model commits to an answer or an agent action. It treats ambiguity as uncertainty over latent user intent, estimates "
-        "expected utility over possible clarification replies, and routes the request to direct answer, clarifier, "
-        "premise-check, or refusal/redirect as appropriate."
+        "before the model commits to an answer or an agent action. In chat, this prevents premature first answers from becoming misleading evidence. "
+        "In agentic workflows, the same idea can preserve the original goal while filtering tool-output noise, failed attempts, and conversational drift."
     )
 
     def heading(text: str, level: int = 1) -> None:
@@ -473,6 +472,8 @@ def build_docx(diagram_path: Path) -> Path:
     for text in [
         "A common failure mode in LLM systems is unresolved ambiguity. Users often ask questions that admit multiple plausible interpretations, while the system is optimized to answer immediately. The result is a broad first answer, a user correction, and an unnecessary second pass.",
         "ICA inserts a control layer between user input and final generation. The layer estimates likely intent hypotheses, scores ambiguity and risk, and decides whether clarification improves the expected outcome enough to justify the extra turn.",
+        "The same failure becomes more expensive in agents. In a coding agent, unresolved or drifting intent can produce wrong edits, repeated failed fixes, noisy tool loops, and expensive context growth. ICA frames this as an intent-control problem rather than merely a larger-context problem.",
+        "That makes the agentic use case economically important: a drifted coding agent does not only spend extra tokens, it spends extra tokens taking the wrong actions. A compact task-state packet can reduce both tokens per step and wasted steps.",
     ]:
         document.add_paragraph(text)
 

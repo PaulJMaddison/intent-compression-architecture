@@ -50,6 +50,53 @@ When a load-bearing word changes the answer, the system should resolve the word 
 
 ---
 
+## Why this matters for agents and coding agents
+
+The same failure becomes more expensive in agentic systems.
+In a normal chat, unresolved intent can produce a misleading answer.
+In a coding agent, unresolved or drifting intent can produce wrong edits, repeated failed fixes, noisy tool loops, and expensive context growth.
+
+ICA is therefore not only a clarification layer.
+It is an **intent control plane** for long-running model workflows.
+
+For coding agents, the core problem is not just context length.
+It is semantic noise:
+
+- stale terminal output
+- failed attempts that should not be repeated
+- side quests introduced by incidental errors
+- user corrections that shift wording but not the original goal
+- long histories that make the model attend to the wrong thing
+
+An ICA-style agent controller can keep a compact task-state packet in front of the model:
+
+```text
+original user goal
+current verified state
+known constraints
+failed attempts to avoid
+next best action
+```
+
+That is the agentic version of intent compression.
+Instead of re-sending a messy transcript and hoping the model remembers what matters, the controller preserves the goal, filters semantic noise, and refreshes the model with the state needed for the next action.
+
+This is the economic reason the agentic use case matters.
+Coding agents are where reliability and unit cost collide: a drifted agent does not only spend extra tokens, it spends extra tokens taking the wrong actions.
+If ICA keeps task state compact while preserving goal fidelity, it attacks both costs at once: fewer tokens per step and fewer wasted steps.
+
+The current repo does not yet prove coding-agent performance.
+But it makes the next benchmark obvious:
+
+- standard agent with full chat/tool history
+- versus ICA-guided agent with compressed intent and task state
+
+Useful measurements would include tokens to green tests, repeated mistake count, loop depth, time to resolution, code churn, and whether the original user goal survived the run.
+If validated there, ICA becomes more than a reliability pattern for chat.
+It becomes infrastructure for lower-drift, lower-cost agentic systems.
+
+---
+
 ## Claim ladder
 
 1. **Weak claim**
@@ -69,6 +116,9 @@ At large scale, clarification traces become structured intent-resolution data.
 
 6. **Moat claim**
 The architecture is copyable; the trained clarification policy and clarification data flywheel are harder to copy.
+
+7. **Agentic claim**
+The same compression principle can preserve task intent across long-running agent workflows, reducing drift, repeated mistakes, and unnecessary context growth.
 
 ---
 
