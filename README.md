@@ -1,4 +1,4 @@
-# Intent Compression Architecture: A Clarification-First Control Layer for Reliable LLM Systems
+# Intent Compression Architecture: A Control Plane for Intent in Reliable LLM Systems
 
 **Author:** Paul Maddison  
 **Email:** paul.maddison.delimeg@gmail.com  
@@ -10,6 +10,7 @@
 
 Intent Compression Architecture (ICA) is a **pre-generation control layer** for LLM systems.
 Its job is to decide whether ambiguity should be resolved before the model commits to an answer.
+More generally, ICA is a **control plane for intent**: it keeps the model focused on the meaning that matters before answer generation or agent action.
 
 The key claim is simple:
 
@@ -1039,6 +1040,10 @@ The same control-layer idea may apply to coding agents.
 In chat, ICA prevents the model from answering before intent is resolved.
 In agents, ICA can preserve the original task intent while filtering tool-output noise, failed attempts, and conversational drift across many steps.
 
+In that framing, ICA becomes a control plane for agentic systems.
+It does not replace the model's reasoning or tool use.
+It governs the state that the model should reason over: original goal, verified facts, current constraints, failed paths, and the next useful action.
+
 For an agent, the compressed state packet might look like:
 
 ```text
@@ -1065,6 +1070,7 @@ Useful metrics would include:
 
 This repository does **not** yet benchmark coding-agent performance.
 The extension is included because it is a natural, testable bridge from clarification-first chat to intent-preserving agent orchestration.
+If validated on coding-agent benchmarks, this could improve agent unit economics by reducing repeated context, failed loops, and intent drift.
 
 ---
 

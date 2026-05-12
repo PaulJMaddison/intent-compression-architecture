@@ -10,6 +10,7 @@
 - Added test coverage for the compression-optimized propaganda clarifier.
 - Documented that the next proof step is live API-instrumented benchmarking with billed token and latency capture.
 - Added a conservative future-extension bridge for applying ICA to coding-agent task-state compression.
+- Added "control plane for intent" positioning for reliable LLM and agentic systems.
 
 This release still uses the offline mock provider for package validation. Live OpenAI/xAI provider adapters are intentionally left as the next implementation milestone.
 

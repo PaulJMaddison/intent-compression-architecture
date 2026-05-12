@@ -408,7 +408,7 @@ def build_docx(diagram_path: Path) -> Path:
     add_paragraph_style(document, "ICA Callout", 10, bold=False, color="20354F")
 
     header = section.header.paragraphs[0]
-    header.text = "Intent Compression Architecture | Engineering Design Proposal"
+    header.text = "Intent Compression Architecture | Control Plane for Intent"
     header.style = document.styles["Normal"]
     header.alignment = WD_ALIGN_PARAGRAPH.LEFT
     if header.runs:
@@ -416,7 +416,7 @@ def build_docx(diagram_path: Path) -> Path:
         header.runs[0].font.color.rgb = RGBColor.from_string("5B6470")
 
     footer = section.footer.paragraphs[0]
-    footer.text = "Paul Maddison | Clarification-first control layer for reliable LLM systems"
+    footer.text = "Paul Maddison | Control plane for intent in reliable LLM systems"
     footer.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     if footer.runs:
         footer.runs[0].font.size = Pt(8)
@@ -427,7 +427,7 @@ def build_docx(diagram_path: Path) -> Path:
     p.add_run("Intent Compression Architecture").bold = True
 
     p = document.add_paragraph(style="ICA Subtitle")
-    p.add_run("A Clarification-First Control Layer for Reliable LLM Systems")
+    p.add_run("A Control Plane for Intent in Reliable LLM Systems")
     p = document.add_paragraph(style="ICA Subtitle")
     p.add_run("Engineering design proposal")
 
@@ -458,8 +458,8 @@ def build_docx(diagram_path: Path) -> Path:
     callout = document.add_paragraph(style="ICA Callout")
     callout.alignment = WD_ALIGN_PARAGRAPH.LEFT
     callout.add_run(
-        "Executive summary. ICA is a pre-generation control layer that decides whether clarification is worth the cost "
-        "before the model commits to an answer. It treats ambiguity as uncertainty over latent user intent, estimates "
+        "Executive summary. ICA is a pre-generation control layer and control plane for intent. It decides whether clarification is worth the cost "
+        "before the model commits to an answer or an agent action. It treats ambiguity as uncertainty over latent user intent, estimates "
         "expected utility over possible clarification replies, and routes the request to direct answer, clarifier, "
         "premise-check, or refusal/redirect as appropriate."
     )
@@ -658,10 +658,13 @@ def build_docx(diagram_path: Path) -> Path:
         "The same control-layer idea may apply to coding agents. In chat, ICA prevents the model from answering before intent is resolved. In agents, ICA can preserve the original task intent while filtering tool-output noise, failed attempts, and conversational drift across many steps."
     )
     document.add_paragraph(
+        "In that framing, ICA becomes a control plane for agentic systems. It does not replace the model's reasoning or tool use; it governs the state the model should reason over: original goal, verified facts, current constraints, failed paths, and the next useful action."
+    )
+    document.add_paragraph(
         "For an agent, the compressed state packet might include the original user goal, current verified state, known constraints, failed attempts to avoid, and next best action. That packet can keep the model focused on the task state that matters rather than the full conversational residue."
     )
     document.add_paragraph(
-        "This repository does not yet benchmark coding-agent performance. The extension is a natural, testable bridge from clarification-first chat to intent-preserving agent orchestration, with metrics such as tokens to green tests, repeated mistakes, time to resolution, final pass rate, unnecessary code churn, and preservation of original intent."
+        "This repository does not yet benchmark coding-agent performance. The extension is a natural, testable bridge from clarification-first chat to intent-preserving agent orchestration, with metrics such as tokens to green tests, repeated mistakes, time to resolution, final pass rate, unnecessary code churn, and preservation of original intent. If validated on coding-agent benchmarks, this could improve agent unit economics by reducing repeated context, failed loops, and intent drift."
     )
 
     heading("12. Adversarial and deployment guidance")
