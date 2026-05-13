@@ -14,6 +14,7 @@ Important limitations:
 - Clarifier replies were evaluator-supplied branch choices rather than live user interactions.
 - Token counts are estimated with `cl100k_base` over benchmark text, not provider-billed usage.
 - Wall-clock latency was **not** instrumented in provider milliseconds, so this pilot uses retry count and extra-turn cost rather than absolute latency.
+-  **Discovery turn assignment** is a benchmark convention, not individually instrumented per-case. In baseline paths where repair was needed, the ambiguity-discovery turn is modelled as turn 3, representing the shortest realistic repair funnel: wrong first answer → user correction turn → ambiguity resolved. In paths where no repair was needed, it is modelled as turn 2 (correction tightened the answer) or turn 1 (direct route or refusal). ICA always reaches turn 1 by design, since clarification is the first action. The uniformity within each repair-outcome group reflects this convention — it is not a measured per-prompt latency value.
 - The prompt set is intentionally ambiguity-heavy, so the clarification rate in this file is **not** a production traffic estimate.
 - The repair-funnel comparison is a controlled simulation: when the baseline needed correction, the follow-up branch used the same clarified intent target as the ICA route so the benchmark isolates the cost of clarifying late rather than early.
 - In repaired-baseline scoring, final quality is equalized with ICA only when the baseline needed repair. The repaired utility score still penalizes extra repair tokens and retry burden so delayed clarification does not receive a free tie.
@@ -63,7 +64,7 @@ Note: this pilot is designed to test ambiguous-prompt handling, not to estimate 
 
 - ICA improved mean correctness, clarity, and safety on this ambiguity-heavy prompt set.
 - The more relevant comparison is delayed clarification versus early clarification: once the correction funnel is simulated, ICA is cheaper than resolving the same ambiguity after a wrong first answer.
-- ICA also discovers the load-bearing ambiguity earlier: in this pilot the mean definition-discovery turn drops from the baseline path to turn 1 under ICA.
+- ICA also discovers the load-bearing ambiguity earlier: in this pilot the mean definition-discovery turn drops from the baseline path to turn 1 under ICA. Discovery turn is modelled using benchmark-design conventions (see Method), not individually instrumented latency — the real-world improvement direction is expected to hold but per-case timing will vary..
 - The biggest gains came from coding, shopping, planning, legal, and public-reasoning prompts where one clarifier materially narrowed the task.
 - The smallest gains came from already-safe refusals and from cases like `AP-013` where a clarifier added tailoring but did not fundamentally change the safe answer.
 - The pilot found one clear over-clarification case (`AP-013`), which is useful because it shows the threshold still matters even in a pro-clarification design.
