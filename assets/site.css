@@ -175,6 +175,29 @@ code {
   margin-inline: auto;
 }
 
+.archive-banner {
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 200, 87, 0.1);
+}
+
+.archive-banner > div {
+  width: min(var(--max), calc(100% - 32px));
+  margin: 0 auto;
+  padding: 16px 0;
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.archive-banner strong {
+  color: var(--amber);
+}
+
+.archive-banner code {
+  white-space: nowrap;
+}
+
 .hero {
   overflow: hidden;
   min-height: 76svh;
@@ -901,6 +924,11 @@ pre {
 
   .nav-links a {
     padding: 12px;
+  }
+
+  .archive-banner code {
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .section {

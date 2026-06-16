@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Intent Compression Architecture is a clarification-first control plane for reliable LLM and agent systems."
+      content="Reference/archive for Intent Compression Architecture theory, the offline Python mock package, validation scaffolds, and pilot examples."
     >
     <title>Intent Compression Architecture</title>
     <link rel="stylesheet" href="assets/site.css">
@@ -26,17 +26,28 @@
           <a href="#architecture">Architecture</a>
           <a href="#policy">Policy</a>
           <a href="#evidence">Evidence</a>
-          <a href="#implementation">Implementation</a>
+          <a href="#implementation">Archive Package</a>
           <a class="nav-cta" href="https://github.com/PaulJMaddison/intent-compression-architecture">GitHub</a>
         </div>
       </nav>
     </header>
 
     <main>
+      <section class="archive-banner" aria-label="Repository status">
+        <div>
+          <strong>Status: reference/archive.</strong>
+          <span>
+            This repository preserves ICA theory, proposal artifacts, the offline Python mock/reference package,
+            validation scaffolds, and pilot examples. It is not the active Clarity/ICA source of truth.
+            Current implementation work lives at <code>C:\Kyntic\kynticai-intent-compression-architecture</code>.
+          </span>
+        </div>
+      </section>
+
       <section class="hero section-band">
         <div class="hero-grid">
           <div class="hero-copy reveal">
-            <p class="eyebrow">Clarification-first orchestration for LLM systems</p>
+            <p class="eyebrow">Archived clarification-first orchestration reference</p>
             <h1>Resolve intent before the model guesses.</h1>
             <p class="hero-lede">
               ICA is a control plane that sits before generation or agent action.
@@ -264,12 +275,12 @@
 
       <section class="section implementation section-band" id="implementation">
         <div class="section-head reveal">
-          <div class="section-kicker">Implementation</div>
-          <h2>Not just a paper: the repo ships a typed Python core.</h2>
+          <div class="section-kicker">Archive Package</div>
+          <h2>Reference package: a typed Python mock core.</h2>
           <p>
-            <code>ica-core</code> is a provider-agnostic package with a deterministic
+            <code>ica-core</code> is preserved here as a provider-agnostic reference package with a deterministic
             offline mock provider, Pydantic schemas, a CLI demo, local validation
-            scripts, and privacy-conscious tracing.
+            scripts, and privacy-conscious tracing. Active Clarity/ICA implementation work lives outside this archive.
           </p>
         </div>
 
@@ -300,7 +311,7 @@ python -m ica_core.cli --json "Make this API faster."</code></pre>
 
       <section class="section artifacts reveal" id="artifacts">
         <div class="section-kicker">Repository Artifacts</div>
-        <h2>Everything needed to inspect, run, and extend the idea.</h2>
+        <h2>Everything needed to inspect, replay, and preserve the idea.</h2>
         <div class="artifact-grid">
           <a href="README.md"><span>README</span><strong>Architecture argument and usage guide</strong></a>
           <a href="spec/clarifier_output.schema.json"><span>Schema</span><strong>Machine-readable clarifier contract</strong></a>

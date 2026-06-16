@@ -1,5 +1,7 @@
 # ICA Evaluation Protocol
 
+> **Status: reference/archive.** This protocol is preserved as the archived ICA evaluation scaffold and benchmark design note. Current Clarity/ICA implementation work lives at `C:\Kyntic\kynticai-intent-compression-architecture`; the material below remains useful for theory, pilot design, and validation framing.
+
 This folder defines a lightweight evaluation plan for testing **Intent Compression Architecture (ICA)** against a direct-answer baseline.
 
 The goal is not to prove a final universal result.
@@ -37,7 +39,7 @@ A one-shot direct answer can look artificially cheap if the measurement stops be
 
 ## Reproducibility
 
-To reproduce the current pilot artifacts from this repository:
+To reproduce the archived pilot artifacts from this repository:
 
 1. install the Python dependencies used by the benchmark and document scripts
 2. run `bash scripts/validate_local.sh` or `./scripts/validate_local.ps1`
@@ -175,8 +177,8 @@ That equalizes final quality where possible, while the utility proxy still penal
 
 ## Calibration signal
 
-The current pilot is deliberately ambiguity-heavy, and its ICA route distribution is therefore not a production target.
-In the current 25-prompt stress set, ICA asks a clarifier for 20 prompts.
+The archived pilot is deliberately ambiguity-heavy, and its ICA route distribution is therefore not a production target.
+In the archived 25-prompt stress set, ICA asks a clarifier for 20 prompts.
 That 80% clarification rate is defensible for stress testing but would be a warning sign on representative traffic.
 
 For the next API-instrumented run, treat these as primary tau-calibration signals:

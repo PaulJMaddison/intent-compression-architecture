@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Intent Compression Architecture is a Python reference implementation and documentation package for an offline clarification/control-plane policy. The default local provider is the deterministic mock provider.
+Intent Compression Architecture is a reference/archive Python implementation and documentation package for an offline clarification/control-plane policy. It preserves useful ICA theory, pilot, validation, and mock-provider material, but it is not the active KynticAI Clarity Engine / ICA source of truth. Current implementation work lives at `C:\Kyntic\kynticai-intent-compression-architecture`. The default local provider in this archive is the deterministic mock provider.
 
 ## Build/Test Commands
 

@@ -1,3 +1,5 @@
+> **Status: reference/archive.** This repository preserves ICA theory, public write-up material, the offline Python mock/reference package, validation scaffolds, and benchmark examples. Treat it as read-mostly archive material unless a task explicitly reactivates it. It is **not** the canonical active KynticAI Clarity Engine implementation; current Clarity/ICA implementation work lives at `C:\Kyntic\kynticai-intent-compression-architecture` (`../kynticai-intent-compression-architecture` from this repo), as defined by `C:\Kyntic\docs\source-of-truth-naming-map.md`.
+
 # Intent Compression Architecture: The Intent Control Plane for Reliable LLM Systems
 
 **Author:** Paul Maddison  
@@ -475,7 +477,7 @@ In those cases, refusal or redirection is cleaner and safer.
 
 ![ICA architecture](diagrams/architecture.png)
 
-The updated diagram reflects the current architecture claim:
+The updated diagram reflects the architecture claim preserved in this archive:
 
 - intent hypotheses are generated first
 - ambiguity and risk are scored jointly
@@ -527,7 +529,7 @@ Validation command:
 python scripts/validate_schema.py
 ```
 
-The schema uses a canonical repo URL as its `$id`, and the example is intended to be machine-valid rather
+The schema uses a stable reference repo URL as its `$id`, and the example is intended to be machine-valid rather
 than illustrative only.
 
 This check can be run locally:
@@ -536,7 +538,7 @@ This check can be run locally:
 python scripts/validate_schema.py
 ```
 
-Local validation is the canonical reproducibility path for this repository.
+Local validation is the archived package's reproducibility path for this repository.
 
 Illustrative payload:
 
@@ -576,10 +578,11 @@ It turns ICA from a conceptual recommendation into a concrete orchestration cont
 
 ---
 
-## Repository implementation
+## Archived repository implementation
 
-The repo includes both the design proposal and a small Python package, `ica-core`, that implements the ICA control layer as reusable library code.
-This section is for readers who want to run or extend the implementation after understanding the argument.
+The archive includes both the design proposal and a small Python package, `ica-core`, that implements the ICA control layer as reusable mock/reference library code.
+This section is for readers who want to inspect, replay, or intentionally extend the archived implementation after understanding the argument.
+For current product-facing Clarity/ICA implementation work, use `C:\Kyntic\kynticai-intent-compression-architecture`.
 
 ### Primary artifacts
 
@@ -618,8 +621,8 @@ If you need to target a specific interpreter, set `PYTHON` first and then run th
 
 ### Python package: `ica-core`
 
-`ica-core` is not a hosted SaaS product and it is not tied to one model provider.
-The package is intended to be the local foundation for:
+`ica-core` is not a hosted SaaS product, not the active Clarity implementation, and not tied to one model provider.
+In this archive, the package is retained as a local reference foundation for:
 
 - a Python library used inside LLM applications
 - a later self-hosted gateway layer, such as `ica-gateway`
@@ -702,7 +705,7 @@ Current provider support is intentionally conservative:
 - `mock`: implemented, deterministic, offline, suitable for tests and demos
 - OpenAI/xAI/other providers: not bundled yet; the provider interface is ready for adapters that implement `generate_structured`
 
-Provider API key settings are available for future adapters using the providers' normal environment variable names, such as `OPENAI_API_KEY` and `XAI_API_KEY`.
+Provider API key settings are present only for future intentional adapters using the providers' normal environment variable names, such as `OPENAI_API_KEY` and `XAI_API_KEY`.
 No real API key is hardcoded or required.
 
 ### Tracing and privacy
@@ -896,7 +899,7 @@ In practice, the more meaningful comparison is:
 For ambiguous prompts, the second and third comparisons are the ones that matter most.
 The first can make a wrong answer look artificially cheap simply because the measurement stops before the intent is actually resolved.
 
-The current pilot utility proxy is intentionally simple and reproducible:
+The archived pilot utility proxy is intentionally simple and reproducible:
 
 ```text
 quality = (correctness + clarity + safety) / 3
@@ -943,7 +946,7 @@ Those counter-metrics matter because ICA can fail in both directions:
 - it can ask too often and annoy users
 - it can ask too rarely and let ambiguity damage the answer
 
-The current 25-prompt pilot is deliberately ambiguity-heavy and routes 20 of 25 prompts to `ask_clarifier`.
+The archived 25-prompt pilot is deliberately ambiguity-heavy and routes 20 of 25 prompts to `ask_clarifier`.
 That 80% clarification rate is defensible for a stress set, but it should **not** be treated as a desired production rate.
 On representative traffic, clarification rate and over-clarification rate should become the primary tau-calibration signals.
 If a live API run or broader traffic sample still clarifies at stress-test frequency, the threshold is probably too low or the prompt set is still biased toward ambiguity.
@@ -1237,8 +1240,20 @@ The important design point is that clarification should narrow uncertainty, not 
 
 ## Repository status
 
-The README, architecture diagram, proposal DOCX, and proposal PDF in this repository are intended to describe the **same architecture revision**.
-If one artifact is updated, the others should be regenerated to keep the package aligned.
+This repository is retained as reference/archive material for the ICA research argument, public proposal artifacts, offline mock-provider validation path, and pilot/evaluation examples.
+It should not be treated as the active product implementation unless a future task explicitly reactivates it.
+
+The canonical active KynticAI Clarity Engine / ICA implementation is:
+
+```text
+C:\Kyntic\kynticai-intent-compression-architecture
+```
+
+In workspace-relative terms, that is `../kynticai-intent-compression-architecture`.
+The workspace naming source of truth is `C:\Kyntic\docs\source-of-truth-naming-map.md`.
+
+The README, architecture diagram, proposal DOCX, and proposal PDF in this archive are still intended to describe the **same architecture revision**.
+If one of those reference artifacts is intentionally updated, the others should be regenerated to keep the archived package internally aligned.
 
 ---
 

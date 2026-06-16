@@ -233,6 +233,8 @@ def write_markdown(rows: list[dict]) -> None:
     summary_lines = [
         "# ICA Pilot Results",
         "",
+        "> **Status: reference/archive.** These pilot results are retained as historical ICA evidence for the archived proposal package. They are not current Clarity production benchmark results; active implementation work lives at `C:\\Kyntic\\kynticai-intent-compression-architecture`.",
+        "",
         f"**Run ID:** `{RUN_METADATA['run_id']}`",
         f"**Model family:** {RUN_METADATA['model_family']}",
         f"**Date:** {RUN_METADATA['date']}",
