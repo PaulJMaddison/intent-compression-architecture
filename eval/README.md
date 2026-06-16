@@ -81,12 +81,42 @@ Recommended minimum:
 Suggested domains:
 
 - coding
+- relationship intelligence and enterprise knowledge retrieval
 - search and shopping
 - planning and productivity
 - legal and medical
 - finance
 - public reasoning
 - adversarial or manipulative prompts
+
+---
+
+## UCL relationship-intelligence benchmark note
+
+For the UCL relationship-intelligence use case, treat ICA as a pre-retrieval control layer rather than a relationship graph implementation.
+The applied question is whether ambiguity changes the evidence pack or downstream action.
+
+Example prompt:
+
+```text
+Prep me on Alex before the UCL partner call.
+```
+
+The benchmark branch should specify whether the intended action is a meeting brief, an introduction path, a relationship-status summary, a risk review, or no action.
+ICA should ask before retrieval only when that branch would change which people, organisations, time windows, source classes, or relationship signals are retrieved.
+If the same evidence pack would be retrieved under every plausible branch, the better route is usually retrieval under a stated assumption rather than a pre-retrieval clarifier.
+
+Any `intent_hypotheses[].probability` values in this scenario are priors over the user's intended task.
+They are not truth probabilities about the relationship itself, the evidence, or the correctness of the eventual claim.
+
+Additional metrics for this applied case:
+
+- `evidence_pack_divergence`: whether clarification changed the retrieved sources materially
+- `wrong_person_or_org_rate`: whether the baseline centred the wrong entity
+- `action_reversal_after_correction`: whether the user correction changed briefing, outreach, escalation, or no-action routing
+- `unnecessary_pre_retrieval_clarification_rate`: whether ICA asked even though retrieval and action would have stayed the same
+
+See [`../examples/ucl_relationship_intelligence.md`](../examples/ucl_relationship_intelligence.md) for the worked reference note.
 
 ---
 
@@ -109,6 +139,7 @@ Important controls:
 - keep temperature and model family fixed where possible
 - keep retrieval/tool access fixed across conditions
 - do not give ICA privileged hidden facts beyond the clarifier reply
+- for retrieval-backed tasks, pre-register which ambiguities would change the evidence pack or downstream action
 - log whether the safe response would have been the same with or without clarification
 - keep the scorer blind to the route when possible, or use independent raters to reduce circularity
 - pre-register which prompts are ambiguity-heavy so the observed clarification rate is not mistaken for production traffic

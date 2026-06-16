@@ -107,6 +107,12 @@
               <strong>ask only when the expected improvement in quality or safety
               exceeds the cost of another turn.</strong>
             </p>
+            <p>
+              In retrieval-backed use cases such as UCL relationship intelligence,
+              ICA asks before retrieval only when ambiguity changes the evidence
+              pack or downstream action; otherwise it can retrieve under a stated
+              assumption and keep uncertainty visible.
+            </p>
           </div>
         </div>
       </section>
@@ -161,7 +167,7 @@
             </article>
             <article class="route-content" id="route-clarify" role="tabpanel" aria-labelledby="tab-clarify" hidden>
               <h3>ask_clarifier</h3>
-              <p>Ask the smallest neutral question that collapses the relevant intent space.</p>
+              <p>Ask the smallest neutral question that changes the answer, evidence pack, retrieval filters, or action.</p>
             </article>
             <article class="route-content" id="route-premise" role="tabpanel" aria-labelledby="tab-premise" hidden>
               <h3>premise_check</h3>

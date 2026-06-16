@@ -128,6 +128,41 @@ Useful measurements would include tokens to green tests, repeated mistake count,
 
 ---
 
+## Applied use case: UCL relationship intelligence
+
+UCL relationship-intelligence work is a useful applied case because the user is often asking for a briefing, introduction path, account context, or risk view from the same broad relationship surface.
+ICA's role is not to implement that relationship graph.
+It is to decide whether the missing intent should be resolved before the retrieval plan is built.
+
+Example prompt:
+
+> "Prep me on Alex before the UCL partner call."
+
+That can mean several materially different tasks:
+
+| Interpretation | Evidence pack if true | Action if true |
+| --- | --- | --- |
+| Alex is the partner-side sponsor | recent meeting notes, open commitments, decision history, relationship strength signals | produce a meeting brief and likely talking points |
+| Alex is a possible introducer | mutual contacts, previous introductions, consent or sensitivity notes, current relationship path | suggest an introduction route or next outreach step |
+| Alex is linked to an unresolved concern | flagged issues, disputed facts, open escalations, confidence gaps | recommend caution, evidence review, or human follow-up |
+
+ICA should ask before retrieval only when the ambiguity changes the evidence pack or the downstream action.
+If every plausible branch would retrieve the same entities, time window, documents, and relationship signals, the system can retrieve first and state its assumptions.
+If the branch changes which person is meant, which relationship type matters, which sources are in scope, or whether the action is briefing, outreach, escalation, or no action, a short clarifier is justified before retrieval.
+
+The hypothesis probabilities in that route are priors over what the user might mean, not truth probabilities about whether a relationship exists or how strong it is.
+The user reply and retrieved evidence can update, override, or invalidate those priors.
+
+For benchmark purposes, the applied comparison is:
+
+- direct retrieval baseline: retrieve a broad pack and answer under an implicit interpretation
+- ICA route: ask only when evidence-pack or action divergence clears the threshold
+- measured outcomes: evidence-pack divergence, wrong-person or wrong-organisation rate, action reversal after correction, user correction burden, and tokens per resolved task
+
+See the worked reference note in [`examples/ucl_relationship_intelligence.md`](examples/ucl_relationship_intelligence.md).
+
+---
+
 ## Claim ladder
 
 1. **Weak claim**
@@ -273,6 +308,7 @@ Plain English:
 
 The schema fields `intent_entropy_bits` and `intent_hypotheses[].probability` should not be read as magical model self-knowledge.
 In a production implementation, they should be treated as calibrated control-layer estimates.
+They are priors over intent hypotheses for routing, not factual truth probabilities about the user, an external relationship, or a retrieved evidence pack.
 
 A practical estimator has four stages:
 
@@ -396,17 +432,17 @@ Good clarifiers:
 - use neutral wording
 - avoid injecting assumptions
 - minimize token count and user effort
-- materially change the likely final answer
+- materially change the likely final answer, evidence pack, retrieval filters, or downstream action
 
 Bad clarifiers:
 
-- ask for information that will not change the answer
+- ask for information that will not change the answer, evidence pack, or action
 - present loaded or leading framings
 - require long explanations when a short disambiguation would suffice
 - confirm harmful intent when the safe response would not change anyway
 
 So the goal is not "ask a question."
-The goal is "ask the smallest question that meaningfully changes the answer."
+The goal is "ask the smallest question that meaningfully changes the answer, evidence pack, or action."
 
 ---
 
@@ -553,6 +589,7 @@ This section is for readers who want to run or extend the implementation after u
 - Clarifier contract schema: [`spec/clarifier_output.schema.json`](spec/clarifier_output.schema.json)
 - Clarifier contract example: [`spec/clarifier_output.example.json`](spec/clarifier_output.example.json)
 - Benchmark prompt set: [`examples/ambiguous_prompts.csv`](examples/ambiguous_prompts.csv)
+- UCL relationship-intelligence example: [`examples/ucl_relationship_intelligence.md`](examples/ucl_relationship_intelligence.md)
 - Evaluation protocol: [`eval/README.md`](eval/README.md)
 - Sample reporting format: [`eval/sample_results.md`](eval/sample_results.md)
 - Pilot benchmark report: [`eval/pilot_results.md`](eval/pilot_results.md)
@@ -1212,6 +1249,7 @@ It is a practical control-layer pattern for LLM systems:
 
 - model ambiguity as uncertainty over intent
 - compress that uncertainty before generation when clarification is worth the cost
+- ask before retrieval only when ambiguity changes the evidence pack or action
 - isolate uncertainty to model and external-system calls while keeping orchestration explicit
 - choose the highest-utility clarifier rather than asking by default
 - measure cost at the level of resolved intent, not just the first assistant response
