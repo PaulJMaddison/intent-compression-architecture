@@ -945,6 +945,8 @@ On Windows PowerShell, use:
 
 Both helper scripts honor a `PYTHON` environment variable if you want to target a specific interpreter.
 
+The default validation path is offline and uses the mock provider. See [`LOCAL_VALIDATION.md`](LOCAL_VALIDATION.md) before adding any live provider or hosted API proof.
+
 If you want to run the individual steps manually instead of the helper script:
 
 ```bash
