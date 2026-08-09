@@ -1,4 +1,6 @@
 > **Status: reference/archive.** This repository preserves ICA theory, public write-up material, the offline Python mock/reference package, validation scaffolds, and benchmark examples. Treat it as read-mostly archive material unless a task explicitly reactivates it. It is **not** the canonical active KynticAI Clarity Engine implementation; current Clarity/ICA implementation work lives at `C:\Kyntic\kynticai-intent-compression-architecture` (`../kynticai-intent-compression-architecture` from this repo), as defined by `C:\Kyntic\docs\source-of-truth-naming-map.md`.
+>
+> **Current-truth routing:** for Context Engine live-standard boundaries, product naming, commercial evidence, investor/customer claims, and the retired/dead Importance Kernel status, use `C:\Kyntic\docs`, the active source repos, and the InvestorDocs evidence indexes. Historical ICA material here must not override those current sources.
 
 # Intent Compression Architecture: The Intent Control Plane for Reliable LLM Systems
 
