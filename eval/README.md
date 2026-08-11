@@ -1,6 +1,6 @@
 # ICA Evaluation Protocol
 
-> **Status: reference/archive.** This protocol is preserved as the archived ICA evaluation scaffold and benchmark design note. Current Clarity/ICA implementation work lives at `C:\Kyntic\kynticai-intent-compression-architecture`; the material below remains useful for theory, pilot design, and validation framing.
+> **Status: reference/archive.** This protocol is preserved as the archived ICA evaluation scaffold and benchmark design note. Current Clarity/ICA implementation work lives at `C:\Kyntic\kynticai-clarity-gateway`; the material below remains useful for theory, pilot design, and validation framing.
 
 This folder defines a lightweight evaluation plan for testing **Intent Compression Architecture (ICA)** against a direct-answer baseline.
 

@@ -1,6 +1,6 @@
 # ICA Pilot Results
 
-> **Status: reference/archive.** These pilot results are retained as historical ICA evidence for the archived proposal package. They are not current Clarity production benchmark results; active implementation work lives at `C:\Kyntic\kynticai-intent-compression-architecture`.
+> **Status: reference/archive.** These pilot results are retained as historical ICA evidence for the archived proposal package. They are not current Clarity production benchmark results; active implementation work lives at `C:\Kyntic\kynticai-clarity-gateway`.
 
 **Run ID:** `2026-05-09-gpt5-manual-pilot`
 **Model family:** GPT-5 (Codex session)

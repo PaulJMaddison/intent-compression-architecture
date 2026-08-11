@@ -1,6 +1,6 @@
-> **Status: reference/archive.** This repository preserves ICA theory, public write-up material, the offline Python mock/reference package, validation scaffolds, and benchmark examples. Treat it as read-mostly archive material unless a task explicitly reactivates it. It is **not** the canonical active KynticAI Clarity Engine implementation; current Clarity/ICA implementation work lives at `C:\Kyntic\kynticai-intent-compression-architecture` (`../kynticai-intent-compression-architecture` from this repo), as defined by `C:\Kyntic\docs\source-of-truth-naming-map.md`.
+> **Status: reference/archive.** This repository preserves ICA theory, public write-up material, the offline Python mock/reference package, validation scaffolds, and benchmark examples. Treat it as read-mostly archive material unless a task explicitly reactivates it. It is **not** the canonical active KynticAI Clarity Engine implementation; current Clarity/ICA implementation work lives at `C:\Kyntic\kynticai-clarity-gateway` (`../kynticai-clarity-gateway` from this repo), as defined by `C:\Kyntic\kynticai-workspace-docs\source-of-truth-naming-map.md`.
 >
-> **Current-truth routing:** for Context Engine live-standard boundaries, product naming, commercial evidence, investor/customer claims, and the retired/dead Importance Kernel status, use `C:\Kyntic\docs`, the active source repos, and the InvestorDocs evidence indexes. Historical ICA material here must not override those current sources.
+> **Current-truth routing:** for Context Engine live-standard boundaries, product naming, commercial evidence, investor/customer claims, and the retired/dead Importance Kernel status, use `C:\Kyntic\kynticai-workspace-docs`, the active source repos, and the InvestorDocs evidence indexes. Historical ICA material here must not override those current sources.
 
 # Intent Compression Architecture: The Intent Control Plane for Reliable LLM Systems
 
@@ -584,7 +584,7 @@ It turns ICA from a conceptual recommendation into a concrete orchestration cont
 
 The archive includes both the design proposal and a small Python package, `ica-core`, that implements the ICA control layer as reusable mock/reference library code.
 This section is for readers who want to inspect, replay, or intentionally extend the archived implementation after understanding the argument.
-For current product-facing Clarity/ICA implementation work, use `C:\Kyntic\kynticai-intent-compression-architecture`.
+For current product-facing Clarity/ICA implementation work, use `C:\Kyntic\kynticai-clarity-gateway`.
 
 ### Primary artifacts
 
@@ -1248,11 +1248,11 @@ It should not be treated as the active product implementation unless a future ta
 The canonical active KynticAI Clarity Engine / ICA implementation is:
 
 ```text
-C:\Kyntic\kynticai-intent-compression-architecture
+C:\Kyntic\kynticai-clarity-gateway
 ```
 
-In workspace-relative terms, that is `../kynticai-intent-compression-architecture`.
-The workspace naming source of truth is `C:\Kyntic\docs\source-of-truth-naming-map.md`.
+In workspace-relative terms, that is `../kynticai-clarity-gateway`.
+The workspace naming source of truth is `C:\Kyntic\kynticai-workspace-docs\source-of-truth-naming-map.md`.
 
 The README, architecture diagram, proposal DOCX, and proposal PDF in this archive are still intended to describe the **same architecture revision**.
 If one of those reference artifacts is intentionally updated, the others should be regenerated to keep the archived package internally aligned.

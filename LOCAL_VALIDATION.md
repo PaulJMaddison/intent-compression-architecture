@@ -1,6 +1,6 @@
 # Local Validation
 
-> **Status: reference/archive.** These commands validate the archived Python mock/reference package in this repository. For the active KynticAI Clarity Engine / ICA implementation, use `C:\Kyntic\kynticai-intent-compression-architecture`.
+> **Status: reference/archive.** These commands validate the archived Python mock/reference package in this repository. For the active KynticAI Clarity Engine / ICA implementation, use `C:\Kyntic\kynticai-clarity-gateway`.
 
 Routine local development is offline and uses the mock ICA provider. Do not add live provider, hosted API, or paid-service calls to the default validation path.
 

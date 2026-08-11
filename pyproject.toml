@@ -46,8 +46,8 @@ ica = "ica_core.cli:main"
 [project.urls]
 Homepage = "https://pauljmaddison.github.io/intent-compression-architecture/"
 Documentation = "https://pauljmaddison.github.io/intent-compression-architecture/"
-Repository = "https://github.com/PaulJMaddison/intent-compression-architecture"
-Issues = "https://github.com/PaulJMaddison/intent-compression-architecture/issues"
+Repository = "https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference"
+Issues = "https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/PaulJMaddison/intent-compression-architecture/blob/main/spec/clarifier_output.schema.json",
+  "$id": "https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/blob/main/spec/clarifier_output.schema.json",
   "title": "ICA Clarifier Output",
   "description": "Structured decision object emitted by an Intent Compression Architecture control layer before answer generation.",
   "type": "object",

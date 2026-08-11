@@ -1,6 +1,6 @@
 # UCL Relationship-Intelligence Example
 
-> **Status: reference/archive.** This note preserves an applied ICA theory/example from the archived repository. It is not the active Clarity implementation; current Clarity/ICA code lives at `C:\Kyntic\kynticai-intent-compression-architecture`.
+> **Status: reference/archive.** This note preserves an applied ICA theory/example from the archived repository. It is not the active Clarity implementation; current Clarity/ICA code lives at `C:\Kyntic\kynticai-clarity-gateway`.
 
 This is an applied ICA use case, not a product implementation.
 It describes how the control-layer idea can be evaluated for a retrieval-backed relationship-intelligence workflow without exposing or assuming any proprietary system internals.

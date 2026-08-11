@@ -1,6 +1,6 @@
 # Changelog
 
-> **Status: reference/archive.** This changelog records the archived Python mock/reference package and proposal artifact history. Current Clarity/ICA implementation history lives in `C:\Kyntic\kynticai-intent-compression-architecture`.
+> **Status: reference/archive.** This changelog records the archived Python mock/reference package and proposal artifact history. Current Clarity/ICA implementation history lives in `C:\Kyntic\kynticai-clarity-gateway`.
 
 ## v1.0.0 - ICA proposal and canonical LLM-derived demo
 

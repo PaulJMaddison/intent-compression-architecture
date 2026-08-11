@@ -1,6 +1,6 @@
 # ICA Sample Results Template
 
-> **Status: reference/archive.** This template belongs to the archived ICA evaluation package. Use the active Clarity/ICA repository at `C:\Kyntic\kynticai-intent-compression-architecture` for current implementation-facing benchmark work.
+> **Status: reference/archive.** This template belongs to the archived ICA evaluation package. Use the active Clarity/ICA repository at `C:\Kyntic\kynticai-clarity-gateway` for current implementation-facing benchmark work.
 
 This file is a **reporting template**, not a finished benchmark.
 Replace the placeholder values below only after running the evaluation protocol in [`README.md`](README.md).
