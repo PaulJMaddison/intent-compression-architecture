@@ -15,6 +15,14 @@ Intent Compression Architecture is a reference/archive Python implementation and
 - Do not add live OpenAI, xAI, hosted API, or paid-provider calls to default validation.
 - No live provider adapter is bundled today. Any future live API proof must require explicit opt-in, normally `KYNTIC_RUN_E2E_TESTS=1`, and must not require real provider credentials by default.
 
+## Git Safety — Mandatory for All Agents
+
+- Work only on the branch the user provides or explicitly authorises. Preserve all existing and unrelated changes.
+- Never run `git stash`, `git stash drop`, `git reset --hard`, `git clean`, branch deletion, force checkout (`git checkout -f` or equivalent), force push (`--force` or `--force-with-lease`), or any other destructive Git operation.
+- If Git state prevents safe continuation, stop and report the exact current branch and `git status` instead of attempting to repair Git state autonomously.
+- Never reconstruct lost or uncommitted code from conversational memory. If changes appear to have been lost, stop immediately and report the exact Git state; preserve recoverable objects rather than recreating work from memory.
+- Never discard, overwrite, or rewrite uncommitted work unless the user explicitly directs that exact action.
+
 ## State/Update Expectations
 
 - Check `git status` before editing and preserve unrelated local changes.
