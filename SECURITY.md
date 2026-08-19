@@ -1,33 +1,50 @@
-# Security Policy
+# Security
 
-## Scope
+## What this policy covers
 
-This is a reference/archive repository. It contains an offline Python implementation, documentation, schemas, examples and benchmark tooling; it is not a hosted production service.
+This is a historical reference repo, not a live hosted service.
 
-Security reports should still be treated seriously where they affect consumers of the reference package, generated artefacts, local tooling, or accidental data exposure.
+It still contains runnable Python code, local tools, example data and trace support, so security problems should still be taken seriously.
 
-## Reporting
+## Reporting a security problem
 
-Use GitHub's repository security reporting facilities where available. Do not place credentials, exploit secrets, private customer data, or sensitive trace contents in a public issue.
+Use GitHub's private security-reporting feature if it is available for this repository.
+
+Do **not** put API keys, passwords, customer data, private prompts, sensitive traces or working exploit secrets in a public issue.
 
 ## Credentials
 
-Normal tests, examples and local validation require **no live provider credential**. Never commit `.env` files, API keys, tokens, cloud credentials, production cookies, customer datasets, or copied secrets.
+Normal tests and examples need **no real API credentials**.
 
-Provider-key fields exist only to make future/experimental adapter construction possible. The bundled provider remains offline and deterministic.
+Never commit:
+
+- `.env` files containing secrets
+- API keys or access tokens
+- cloud credentials
+- production cookies or session data
+- customer datasets
+- copied passwords or other secrets
+
+The configuration contains fields for provider keys because the old design allowed future provider adapters. The provider included in this archive is offline and deterministic.
 
 ## Trace data
 
-Tracing is disabled by default. For `JSONLTraceSink`:
+Tracing is off by default.
 
-- query text is hashed by default
-- clarifying-question text is hashed by default
-- request metadata is excluded by default
-- raw query text requires an explicit query-trace mode
-- raw clarifier text requires a separate explicit opt-in
+When JSONL tracing is enabled:
 
-The built-in redaction helper is coarse debugging assistance, not a DLP, anonymisation or compliance system. Any real deployment must define retention, deletion, encryption, access-control, consent and data-classification requirements separately.
+- the user's query is hashed by default
+- the clarification question is hashed by default
+- request metadata is left out by default
+- saving the raw query requires an explicit setting
+- saving the raw clarification question requires a separate explicit setting
 
-## Dependency and archive risk
+The built-in redaction helper only removes a few obvious patterns for debugging. It is **not** a full anonymisation, compliance or data-loss-prevention system.
 
-Pinned versions in `requirements.lock` reproduce the archive's artefact/evaluation toolchain; they are not a promise that those versions remain suitable for future production systems. Consumers should perform their own dependency and vulnerability review.
+A real production system would still need proper rules for data retention, deletion, encryption, access, consent and classification.
+
+## Old dependency versions
+
+`requirements.lock` pins versions used by the archived benchmark/document toolchain so the old work is easier to reproduce.
+
+That does not mean those versions should be used in a new production system. Anyone reusing this code should run their own current dependency and vulnerability checks.

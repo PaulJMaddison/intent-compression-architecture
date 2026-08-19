@@ -1,43 +1,50 @@
 # Changelog
 
-> **Status: reference/archive.** This changelog records the historical ICA package and subsequent archive-maintenance work. It is not the release log for the active Clarity Gateway implementation.
+> **Historical reference.** This records changes to the old ICA package and this reference archive. It is not the release history of the current Clarity Gateway product.
 
-## Unreleased — archive hardening
+## Unreleased — documentation made easier to understand
 
-- Reframed the repository as an explicit Clarity Gateway evolution/reference archive rather than relying on local workspace paths for context.
-- Preserved the previous long-form README and website as frozen point-in-time snapshots under `docs/legacy/`.
-- Added a commit-linked `EVOLUTION.md` and an explicit archive preservation policy.
-- Added security, contribution and citation metadata suitable for a public reference repository.
-- Aligned the JSON Schema surface with the Pydantic reference contract and added an automated parity check.
-- Strengthened schema invariants for blank labels, negative information gain, duplicate candidate IDs and incomplete `ask_clarifier` decisions.
-- Hardened provider-response validation and stopped copying raw provider exception text into fallback metadata.
-- Fixed the CLI so environment-backed policy thresholds are actually applied instead of only applying `tau`.
-- Rejected non-finite threshold values.
-- Changed JSONL trace defaults so clarifying-question text is hashed unless raw capture is explicitly enabled.
-- Clarified that the built-in redactor is not a production DLP/anonymisation system.
+- Rewrote the maintained Markdown documentation in simpler English.
+- Kept technical names and formulas only where they are needed for accuracy or for running the code.
+- Simplified the ICA history, evaluation guide, security notes, contribution guide, local validation guide and UCL example.
+- Left `docs/legacy/` and the generated historical pilot results unchanged so the original record is preserved.
 
-## v1.0.0 — ICA proposal and canonical LLM-derived demo
+## Archive hardening — August 2026
 
-- Reframed the README so the human problem and core hook appear before package mechanics.
-- Added the canonical Elon Musk propaganda example based on real LLM interaction data.
-- Updated the mock provider, schema example, and pilot benchmark to use a compression-optimized yes/no definition clarifier.
-- Added explicit early-exit silent-failure and screenshot-misuse risk metrics to the evaluation package.
-- Regenerated the pilot CSV/Markdown report and proposal DOCX/PDF around the updated metrics and canonical example.
-- Added test coverage for the compression-optimized propaganda clarifier.
-- Documented that the next proof step is live API-instrumented benchmarking with billed token and latency capture.
-- Added a coding-agent task-state compression bridge for applying ICA to long-running agent workflows.
-- Added “control plane for intent” positioning for reliable LLM and agentic systems.
-- Promoted the agentic/coding-agent use case near the top of the README and proposal framing.
+- Made it clear that this repo is a historical record of the ideas that led towards Clarity Gateway, not the live product.
+- Preserved the previous long README and website under `docs/legacy/`.
+- Added `EVOLUTION.md` to explain the history using links to the original commits.
+- Added archive, security, contribution and citation guidance.
+- Made sure the JSON Schema and Python Pydantic model describe the same fields, and added an automatic check for future drift.
+- Added stronger validation for blank labels, negative information-gain values, duplicate clarification IDs and incomplete `ask_clarifier` decisions.
+- Improved provider-response validation and stopped raw provider exception text being copied into fallback metadata.
+- Fixed the command-line tool so environment settings for ambiguity and risk thresholds are actually used.
+- Rejected invalid non-finite threshold values.
+- Changed trace defaults so clarification text is hashed unless raw capture is explicitly requested.
+- Made it clear that the simple built-in redactor is not a production anonymisation or data-loss-prevention system.
+- Kept GitHub Actions absent; local offline validation remains the normal test path.
 
-This release used the offline mock provider for package validation. Live provider adapters were intentionally left as a later implementation milestone.
+## v1.0.0 — ICA proposal and main demo
 
-## v0.1.0 — initial `ica-core` package release
+- Reworked the original README so the human problem appeared before the package details.
+- Added the main "propaganda" ambiguity example based on a real LLM interaction.
+- Updated the mock provider, schema example and pilot benchmark around a shorter definition question.
+- Added measurements for users leaving before a misunderstanding is discovered and for first answers being reused as misleading screenshots or quotes.
+- Rebuilt the pilot CSV/Markdown report and proposal DOCX/PDF with the updated example and measurements.
+- Added tests for the shorter clarification question.
+- Documented that stronger evidence would require live API benchmarking with real token and latency measurements.
+- Extended the idea from chat clarification to keeping task state clear for coding agents.
+- Described ICA as a control layer for keeping user intent clear before an AI answers or acts.
 
-- Added a provider-agnostic ICA engine with deterministic policy routing.
-- Added Pydantic v2 schemas aligned with the repository clarifier contract.
-- Added an offline mock provider for tests, demos, and local validation.
-- Added a CLI entrypoint (`ica`) with JSON, dry-run, and local JSONL tracing support.
-- Added privacy-conscious trace utilities that hash queries by default.
-- Added tests covering policy behavior, schema validation, mock provider behavior, CLI, tracing, config, and engine fallback paths.
+This release still used the offline mock provider for validation. Live provider adapters were left for later work.
 
-Live provider calls were not validated in this release; the provider interface was retained as the extension boundary.
+## v0.1.0 — first `ica-core` package
+
+- Added a provider-independent ICA engine with ordinary Python code making the final routing decision.
+- Added Pydantic v2 models for the structured decision format.
+- Added an offline mock provider for tests and demos.
+- Added the `ica` command-line tool with JSON output, dry-run mode and local JSONL tracing.
+- Added private-by-default trace helpers that hash user queries.
+- Added tests for routing, schema validation, the mock provider, CLI, tracing, configuration and fallback paths.
+
+Live provider calls were not part of this release. The provider interface was kept so adapters could be added later.

@@ -1,34 +1,36 @@
 # Contributing
 
-Contributions are welcome when they improve the archive without rewriting its history.
+Contributions are welcome if they make this historical reference easier to understand, safer to run or more accurate **without rewriting its history**.
 
-## Good contributions
+## Good changes
 
-- correctness and security fixes to the offline reference runtime
-- stronger contract validation and edge-case tests
-- portability fixes
-- clearer provenance and evolution documentation
-- reproducibility improvements
-- explicit corrections to historical methodology with the original preserved
+Examples include:
 
-## Please avoid
+- fixing bugs or security problems in the offline reference code
+- adding useful edge-case and failure tests
+- making the code work more reliably across different machines
+- making documentation easier to understand
+- improving local reproducibility
+- correcting an old method or result while keeping the original historical version
 
-- silently modernising frozen historical snapshots
-- presenting the archive as the current Clarity Gateway implementation
-- adding a live API requirement to the default test path
-- committing secrets, private data or real production traces
-- replacing historical benchmark output solely because a newer result looks better
+## Please do not
 
-## Validate changes
+- rewrite files in `docs/legacy/`
+- present this repo as the current Clarity Gateway product
+- make live or paid API calls part of normal testing
+- commit secrets, private data or real production traces
+- silently replace an old benchmark result because a newer result looks better
 
-Core package:
+## Run the tests
+
+For normal Python changes:
 
 ```bash
 python -m pip install -e ".[dev]"
 python -m pytest
 ```
 
-Full archive:
+For the full archive check:
 
 ```bash
 python -m pip install -r requirements.txt
@@ -36,10 +38,14 @@ python -m pip install -e ".[dev]"
 bash scripts/validate_local.sh
 ```
 
-Windows PowerShell:
+On Windows PowerShell:
 
 ```powershell
 .\scripts\validate_local.ps1
 ```
 
-Contract changes must also keep `spec/clarifier_output.schema.json` and the Pydantic model aligned; the full validation path runs `scripts/validate_contract_parity.py`.
+## If you change the decision contract
+
+The JSON Schema in `spec/clarifier_output.schema.json` and the Python Pydantic model must stay in sync.
+
+The full validation script checks this automatically with `scripts/validate_contract_parity.py`.

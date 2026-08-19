@@ -1,54 +1,63 @@
-# Archive Preservation Policy
+# Archive Policy
 
-## Purpose
+## Why this repo is kept
 
-This repository is both historical evidence and an executable reference. Maintenance should improve discoverability, reproducibility, correctness and safety **without silently rewriting the historical record** of how ICA evolved toward the Clarity Gateway.
+This repo is both a historical record and a working reference example.
 
-## Content classes
+We want people to be able to understand and run the old ICA work, but we do **not** want later edits to rewrite what happened at the time.
 
-### 1. Frozen historical snapshots
+## Three types of content
 
-Files under `docs/legacy/` are point-in-time snapshots. Do not modernise their wording, links, claims or terminology in place. If context is needed, add a note in a maintained document that links to the snapshot.
+### 1. Frozen historical copies
 
-### 2. Published historical artefacts
+Everything in `docs/legacy/` is a point-in-time copy of the old documentation.
 
-The proposal PDF/DOCX, architecture artwork and published pilot outputs are provenance-bearing artefacts. If a material error is found, preserve the original and document the correction and its impact rather than replacing history invisibly.
+Do not edit those files to improve wording, links or terminology. If something needs explaining, add the explanation to a current document and link to the old copy.
 
-### 3. Maintained reference surfaces
+### 2. Published historical files
 
-The following may evolve to keep the archive usable:
+The proposal PDF/DOCX, architecture image and published pilot results are part of the historical record.
 
-- root `README.md` and `index.html`
-- `EVOLUTION.md`, `ARCHIVE_POLICY.md`, `SECURITY.md`, `CONTRIBUTING.md`
-- the offline `ica-core` reference runtime
-- schemas, contract validation and tests
-- local validation helpers
+If an old result or statement is later found to be wrong, keep the original and clearly document the correction. Do not quietly replace the old version with a better-looking one.
 
-Changes here should preserve historical behaviour where practical. Where a correctness or security fix changes behaviour, record it in `CHANGELOG.md`.
+### 3. Maintained reference files
 
-## Maintenance rules
+These files can be improved so the archive stays useful:
 
-1. **Preserve provenance.** Do not delete historical meaning merely because current product terminology changed.
-2. **No machine-specific truth.** Public archive docs must not depend on a particular developer's local filesystem paths or private workspace layout.
-3. **No live dependency by default.** Tests and normal validation remain offline. Live-provider experiments, if ever added, must be explicit opt-ins and must not be required to reproduce the archive.
-4. **No secrets or customer data.** Never commit keys, access tokens, production traces, private prompts, customer records or copied credentials.
-5. **Contract drift must fail validation.** The portable JSON Schema and executable Pydantic reference model must remain structurally aligned.
-6. **Corrections are additive.** If benchmark methodology or a historical claim is corrected, preserve the previous artefact and explain the delta.
-7. **Local validation remains canonical.** This is a deliberate historical choice, not an accidental absence of CI.
-8. **Non-destructive Git practices.** Archive maintenance should preserve unrelated work and never use destructive repository operations as an automated convenience.
+- `README.md` and `index.html`
+- `EVOLUTION.md`, `ARCHIVE_POLICY.md`, `SECURITY.md` and `CONTRIBUTING.md`
+- the offline `ica-core` Python code
+- schemas and validation scripts
+- tests and local validation helpers
 
-## When changing benchmark material
+If a bug or security fix changes the behaviour of the reference code, record it in `CHANGELOG.md`.
 
-A benchmark change should document:
+## Rules for maintaining the archive
+
+1. **Keep the history.** Do not remove an old idea simply because the current product has moved on.
+2. **Do not depend on one developer's computer.** Public docs must not rely on private folders or local machine paths.
+3. **Keep normal testing offline.** Live API tests must always be optional.
+4. **Never add secrets or private data.** This includes API keys, tokens, customer data, private prompts and production traces.
+5. **Keep the contract consistent.** The JSON Schema and the Python model must describe the same structure.
+6. **Explain corrections.** Preserve the old result and document what changed and why.
+7. **Keep validation local.** GitHub Actions were deliberately removed from this archive. Local validation is the normal test path.
+8. **Use safe Git practices.** Do not destroy unrelated or uncommitted work to make an archive change easier.
+
+## If benchmark results change
+
+Explain:
 
 - what changed
-- whether old numbers are still comparable
-- whether the change is methodology, bug fix, data correction, or new experiment
-- which artefact represents the historical result
-- which artefact represents the corrected/new result
+- why it changed
+- whether the old and new numbers can still be compared
+- whether it was a bug fix, data correction, method change or a new experiment
+- which file is the original historical result
+- which file contains the corrected or new result
 
-Never replace a published result solely to make the archive look stronger.
+Never replace an old published result simply because a newer result looks better.
 
-## When changing the reference runtime
+## If the reference code changes
 
-Prefer changes that strengthen invariants, validation, privacy, portability and failure handling. Avoid redesigning the archived architecture to match a later product unless the goal is explicitly to add a new historical comparison layer.
+Good changes improve correctness, safety, privacy, validation, portability or failure handling.
+
+Avoid redesigning the old ICA code just to make it look like the current Clarity Gateway. This repo is useful because it shows the path between the two.

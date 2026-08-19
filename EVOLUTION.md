@@ -1,132 +1,173 @@
-# From ICA to Clarity Gateway
+# How ICA Evolved into the Clarity Gateway Idea
 
-This document is the chronology for the repository. It explains what changed, why it changed, and which ideas survived into the later Clarity Gateway direction without pretending that this archived package is the active implementation.
+This file explains the history of this repo in simple terms.
 
-The sequence below is grounded in the repository's commit history and release notes. The purpose is provenance, not retrospective marketing.
+It does **not** describe the current Clarity Gateway product. It shows how an earlier idea called **Intent Compression Architecture (ICA)** developed and which parts of that thinking carried forward.
 
-## 1. The original problem: unresolved intent
+## 1. It started with a simple problem
 
-The early work focused on a common LLM failure mode: the model answers an ambiguous question under one implicit interpretation, and the real disagreement appears only after one or more repair turns.
+AI systems often answer a question before they are sure what the user means.
 
-On 9 May 2026 the repository added a pilot benchmark and then rapidly refined it around correction funnels, wrong-funnel analysis, silent failure, and human early-exit behaviour:
+For example, a user might ask:
 
-- [`62c2e41`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/62c2e41d28419329b084b50c5d44c6ef5987e032) — pilot benchmark results
-- [`8b99c01`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/8b99c018bb4d2c73401981643ac1cf9322cf6f8e) — correction-funnel modelling
-- [`030200c`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/030200cf2dc24f47747fafb1c384d690347b977b) — flywheel and wrong-funnel analysis
-- [`f546972`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/f546972eaa29430f8391f91aeed80366fb3332f2) — mathematical and benchmark presentation
+> "Make this API faster."
 
-The key shift was from “ask more clarifying questions” to a sharper engineering problem: **how do we decide whether the expected value of resolving intent is greater than the cost of another turn?**
+That could mean lower response time, more users at once, less compute cost or faster development. A good answer to the wrong meaning is still a wrong answer.
 
-## 2. Reproducibility before live integrations
+The first ICA work looked at what happens when the AI guesses incorrectly. The user may correct it later, but that creates extra turns, wasted tokens and wasted time. Worse, the user may leave before the misunderstanding is ever discovered.
 
-The next step made the thesis replayable locally. Validation notes, dependencies, helper scripts and a pinned artefact toolchain were added before live provider adapters:
+Early benchmark work on 9 May 2026 explored those problems:
+
+- [`62c2e41`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/62c2e41d28419329b084b50c5d44c6ef5987e032) — first pilot benchmark results
+- [`8b99c01`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/8b99c018bb4d2c73401981643ac1cf9322cf6f8e) — included the cost of correcting a wrong first answer
+- [`030200c`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/030200cf2dc24f47747fafb1c384d690347b977b) — looked at wrong-answer paths and users leaving early
+- [`f546972`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/f546972eaa29430f8391f91aeed80366fb3332f2) — improved the maths and benchmark presentation
+
+The idea became more specific than "AI should ask more questions".
+
+The real question became:
+
+**Is asking one short question cheaper and safer than guessing and possibly doing the wrong work?**
+
+## 2. The idea was made reproducible
+
+Before adding live AI-provider integrations, the project was made runnable offline.
+
+That meant someone could install the dependencies, run the tests and reproduce the examples without paying for API calls or needing private credentials.
+
+Important commits were:
 
 - [`571e64d`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/571e64dd6b69be8130b7258cca5d64a68cafd4b6) — validation and reproduction notes
-- [`05dee7d`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/05dee7d2a36b9c2001e68209902a3dd5f3032307) — requirements and proposal synchronisation
+- [`05dee7d`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/05dee7d2a36b9c2001e68209902a3dd5f3032307) — dependencies and proposal files brought into sync
 - [`6868bf8`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/6868bf8a664f021fa4241ac7781e2dcddeaf3eb3) — quick start and pinned dependencies
-- [`e07cc5b`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/e07cc5b73a7a77d17ef57cc9a77e08b582f821ad) — local validation made canonical
-- [`cde5e00`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/cde5e00af17c2f0d65488d080ce3ab9b62a7deaf) — local validation helpers
-- [`e096e81`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/e096e8149e046d127c8777d424293b58060764ea) — GitHub Actions schema validation deliberately removed
+- [`e07cc5b`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/e07cc5b73a7a77d17ef57cc9a77e08b582f821ad) — local validation became the normal validation method
+- [`cde5e00`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/cde5e00af17c2f0d65488d080ce3ab9b62a7deaf) — local validation scripts
+- [`e096e81`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/e096e8149e046d127c8777d424293b58060764ea) — GitHub Actions validation was deliberately removed
 
-That decision is important to preserve. This archive does not need a modern CI badge to rewrite its history; the canonical path was intentionally local and offline.
+That last point is intentional. This archive uses local, offline validation rather than GitHub Actions.
 
-## 3. From proposal to reusable control layer
+## 3. ICA became working Python code
 
-On 12 May 2026, `ica-core` v0.1.0 made the design executable:
+On 12 May 2026, `ica-core` v0.1.0 turned the design into a small working Python package:
 
 - [`e59064f`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/e59064fff6b7db036dc495276efbe81c3f506516) — `ica-core` v0.1.0
 
-The package established a pattern that remained central to the later Clarity direction:
+The package introduced several ideas that remained important later:
 
-- a provider boundary for probabilistic analysis
-- Pydantic models for a structured decision contract
-- deterministic ask/answer/premise/refusal policy code
-- an offline mock provider
-- CLI and test harnesses
-- privacy-conscious tracing
-- explicit strict and fallback behaviour
+- a standard way for an AI model or other provider to return its analysis
+- a clear structured result instead of a free-form paragraph
+- ordinary Python code making the final routing decision
+- separate handling for answering, asking a question, checking a bad premise, and refusing or redirecting
+- an offline mock provider for tests
+- a command-line demo
+- local tracing with private-by-default behaviour
+- clear errors and fallback behaviour
 
-The architecture separated **estimation** from **routing**. A provider could estimate hypotheses, ambiguity, risk and clarifier utility; deterministic software could still own the final control decision.
+A key design choice was to separate **estimation** from **decision-making**.
 
-## 4. ICA v1.0: expected utility becomes the centre
+The AI could estimate things such as ambiguity and risk, but normal software still made the final routing decision using explicit rules.
 
-The v1.0 release and surrounding commits consolidated the project around the rule:
+## 4. ICA v1.0 made the ask-or-answer rule explicit
 
-`ask iff max_q U(q | x) > tau`
+ICA v1.0 centred the design around one rule:
 
-Relevant milestones:
+```text
+ask if the value of clarifying is greater than the cost of asking
+```
 
-- [`3d70f58`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/3d70f584bf6d21dbacff00b1ae05d518f14c6472) — utility and calibration signals
+The code expresses that more formally as:
+
+```text
+ask iff max_q U(q | x) > tau
+```
+
+You do not need the formula to understand the idea. `tau` is simply a threshold. If clarification is useful enough to cross that threshold, ask. Otherwise, continue without asking.
+
+Relevant commits:
+
+- [`3d70f58`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/3d70f584bf6d21dbacff00b1ae05d518f14c6472) — improved the utility and calibration thinking
 - [`e534c18`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/e534c18165e745b3e8e3e24c753b1b4c7814366f) — ICA v1.0.0
 
-The important idea was not a particular threshold value. It was that the cost of clarification, the cost of a wrong answer, latency, token use, friction and safety risk could be made explicit control variables rather than left to conversational style.
+The important part was never one magic threshold value. The important part was making the trade-off visible: wrong answers cost something, but extra questions also cost something.
 
-## 5. The agentic turn
+## 5. The idea expanded from chat to AI agents
 
-Immediately after v1.0, the repository broadened the thesis from chat clarification to agent reliability:
+Soon after v1.0, the project moved beyond single chat questions.
 
-- [`cc3435b`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/cc3435bb59adf396edc4239e3cf2041f3c17c42e) — coding-agent task-state bridge
-- [`6beb312`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/6beb312ef7155a8468173d8490bd722af28c293e) — intent control-plane positioning
-- [`e70332a`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/e70332a60fe6f4b88123e08818273fd98c6e8ec0), [`d819033`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/d819033fb3d3e5d9bc19b9f5a3ba251721ba58ef), [`25cdf6b`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/25cdf6b55952067c97703c9c8262ee0f16feada2) — increasingly explicit agentic framing
+A long-running coding or AI agent can lose track of the original goal, repeat failed work or get distracted by irrelevant output. The same basic ICA idea can help: keep a short, reliable description of what matters before the next action is taken.
 
-The compressed object was no longer only “what did the user mean?” It became a compact packet such as:
+Important commits:
+
+- [`cc3435b`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/cc3435bb59adf396edc4239e3cf2041f3c17c42e) — coding-agent task-state idea
+- [`6beb312`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/6beb312ef7155a8468173d8490bd722af28c293e) — positioned ICA as an intent-control layer
+- [`e70332a`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/e70332a60fe6f4b88123e08818273fd98c6e8ec0), [`d819033`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/d819033fb3d3e5d9bc19b9f5a3ba251721ba58ef), [`25cdf6b`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/25cdf6b55952067c97703c9c8262ee0f16feada2) — made the agent use case clearer
+
+The useful state can be as simple as:
 
 ```text
 original user goal
-current verified state
-known constraints
-failed attempts to avoid
-next best action
+what we know is true now
+important constraints
+failed attempts not to repeat
+next useful action
 ```
 
-This was the conceptual bridge from clarification UX to a **Clarity Gateway**: a boundary that keeps intent, state and action aligned before expensive or irreversible work happens.
+This is the main bridge from ICA to the later **Clarity Gateway** idea: keep the meaning and state clear before expensive or irreversible work happens.
 
-## 6. Benchmark refinement rather than benchmark inflation
+## 6. The benchmark was corrected, not hidden
 
-On 13 May, the pilot material was corrected to clarify how the definition-discovery turn was modelled:
+On 13 May 2026, the pilot documentation was corrected to explain more clearly how one of the clarification turns was counted:
 
-- [`950b635`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/950b635e71bf0c03542d436f5746ea4620707a8e) — discovery-turn clarification
+- [`950b635`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/950b635e71bf0c03542d436f5746ea4620707a8e) — clarified how the definition-discovery turn was modelled
 
-That matters because this archive is most useful when it preserves caveats. The pilot is evidence about the design and measurement approach, not a universal production performance claim.
+This matters because the pilot was an early design test, not proof that the same numbers would appear in production.
 
-## 7. Applied retrieval and relationship intelligence
+The archive keeps those limits visible on purpose.
 
-On 16 June the UCL example applied the control-plane idea to retrieval-backed work:
+## 7. The idea was applied to retrieval and relationship data
 
-- [`a582f77`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/a582f7716a1f3010f65cdc74153953ebc294eb85) — UCL relationship-intelligence ICA example
+On 16 June 2026, a UCL relationship-intelligence example showed how the same idea could work before retrieving data:
 
-The important extension was: **clarify before retrieval only when the ambiguity changes the evidence pack or downstream action**. If every plausible intent uses the same evidence, retrieve first and keep the assumption visible. If intent changes person, scope, source set, relationship type or action, clarification can save a much larger wrong-funnel cost.
+- [`a582f77`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/a582f7716a1f3010f65cdc74153953ebc294eb85) — UCL relationship-intelligence example
 
-## 8. Transition from active idea to reference lineage
+The rule was simple:
 
-The repository was explicitly marked as an archive on 16 June:
+**Ask before retrieving data only when the missing meaning would change what data you fetch or what action you take.**
 
-- [`04f2d7c`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/04f2d7c4f336289ab57ca8afd0cf93e33b216f4c) — archive state
+If every reasonable interpretation needs the same information, fetch it first and state the assumption. If the meaning changes the person, organisation, time period, sources or action, one short question can prevent a much larger mistake.
 
-Later commits aligned source-of-truth routing and repository identity:
+## 8. ICA became a reference archive
 
-- [`4b1c311`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/4b1c3111564817d1ba8f03deb9a0821bc237fb5f) — archive source-of-truth routing
-- [`9fb9f2c`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/9fb9f2cefa53ee5c5d87a162cd9761acfdcf56b4) — repository identity alignment
-- [`cc18147`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/cc18147021732ba1f1b49e46ebe06a0265a92862) — mandatory Git safety rules
+The repo was explicitly marked as an archive on 16 June 2026:
 
-The archive hardening that followed keeps the executable reference healthy while making that boundary public and machine-independent.
+- [`04f2d7c`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/04f2d7c4f336289ab57ca8afd0cf93e33b216f4c) — marked the repo as archived/reference work
 
-## Concepts that persisted into the Clarity Gateway direction
+Later commits made that boundary clearer:
 
-The historical record shows a consistent set of ideas becoming more general over time:
+- [`4b1c311`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/4b1c3111564817d1ba8f03deb9a0821bc237fb5f) — clarified where current truth should come from
+- [`9fb9f2c`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/9fb9f2cefa53ee5c5d87a162cd9761acfdcf56b4) — aligned the repo identity
+- [`cc18147`](https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference/commit/cc18147021732ba1f1b49e46ebe06a0265a92862) — added Git safety rules
 
-- resolve **load-bearing ambiguity** before committing to an answer or action
-- keep ambiguity, risk and premise validity separate
-- use model estimates as inputs, not unquestioned truth
-- prefer deterministic orchestration where deterministic software can own the decision
-- make control decisions structured and observable
-- calibrate thresholds from outcomes rather than taste
-- measure total cost to resolved intent, not only first-response token count
-- preserve original task intent and verified state in long-running agents
-- treat retrieval scope and downstream action as part of the cost of misunderstanding
+The current archive keeps the old work runnable and understandable without pretending it is the current production system.
 
-Those ideas are the reason this repository is worth preserving.
+## Ideas that survived into the Clarity Gateway direction
 
-## What not to infer
+Across the history of the repo, the same ideas keep appearing:
 
-The archive does **not** claim that current Clarity Gateway internals, naming, schemas, providers, benchmarks or commercial evidence are identical to this repository. It documents the lineage. Current implementation truth belongs to the active product repositories and documentation, not to a historical snapshot.
+- resolve important ambiguity before committing to an answer or action
+- treat uncertainty and risk as different things
+- use AI estimates as inputs, not unquestioned facts
+- let normal deterministic software make decisions where possible
+- make routing decisions visible and testable
+- tune thresholds using real outcomes rather than guesswork
+- measure the full cost of getting to the right result, not only the size of the first answer
+- keep the original goal and verified state clear during long-running agent work
+- include retrieval and downstream actions when measuring the cost of misunderstanding
+
+Those ideas are why this archive is worth keeping.
+
+## What this file does not claim
+
+The current Clarity Gateway may use different code, names, schemas, providers, benchmarks and internal design choices.
+
+This repo documents the **history of the idea**, not the current product specification.

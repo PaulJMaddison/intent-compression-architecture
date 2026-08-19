@@ -1,62 +1,56 @@
-# ICA Sample Results Template
+# ICA Results Template
 
-> **Status: reference/archive.** This template belongs to the archived ICA evaluation package. Use the active Clarity/ICA repository at `C:\Kyntic\kynticai-clarity-gateway` for current implementation-facing benchmark work.
+> **Historical reference.** This is a blank reporting template for the archived ICA evaluation. It is not a finished benchmark result.
 
-This file is a **reporting template**, not a finished benchmark.
-Replace the placeholder values below only after running the evaluation protocol in [`README.md`](README.md).
+Only replace `TBD` values after actually running the evaluation described in [`README.md`](README.md).
 
----
+## Summary
 
-## Summary table
-
-| Metric | Direct one-shot | Direct with repair funnel | ICA policy | Notes |
+| What we measured | Answer immediately | Answer then repair | ICA | Notes |
 | --- | --- | --- | --- | --- |
-| First assistant-message tokens | `TBD` | `n/a` | `TBD` |  |
-| Total tokens to resolved intent | `TBD` | `TBD` | `TBD` |  |
-| Clarification / repair rate | `TBD` | `TBD` | `TBD` |  |
-| Clarification hit rate | `n/a` | `n/a` | `TBD` |  |
-| Retry count | `TBD` | `TBD` | `TBD` |  |
-| Definition-discovery turn | `TBD` | `TBD` | `TBD` |  |
-| User correction burden | `TBD` | `TBD` | `TBD` |  |
-| Human correctness | `TBD` | `TBD` | `TBD` |  |
-| Human clarity | `TBD` | `TBD` | `TBD` |  |
-| Safety / premise handling | `TBD` | `TBD` | `TBD` |  |
-| Utility proxy | `TBD` | `TBD` | `TBD` | Repaired baseline should still be penalized for repair tokens and retries even when final quality is equalized with ICA. |
-| Over-clarification rate | `n/a` | `n/a` | `TBD` |  |
-| False direct-answer rate | `TBD` | `TBD` | `n/a` |  |
-| Silent-failure proxy | `TBD` | `TBD` | `n/a` |  |
-| Early-exit silent-failure risk | `TBD` | `TBD` | `n/a` | User leaves before ambiguity is exposed. |
-| Screenshot misuse risk | `TBD` | `TBD` | `n/a` | First answer can be quote-mined as evidence. |
-| False refusal rate | `TBD` | `TBD` | `TBD` |  |
+| Tokens in first AI message | `TBD` | `n/a` | `TBD` | |
+| Total tokens to reach the intended result | `TBD` | `TBD` | `TBD` | |
+| Clarification / repair rate | `TBD` | `TBD` | `TBD` | |
+| Useful clarification rate | `n/a` | `n/a` | `TBD` | |
+| Number of retries | `TBD` | `TBD` | `TBD` | |
+| Turn where the ambiguity was discovered | `TBD` | `TBD` | `TBD` | |
+| Work needed from the user to correct the AI | `TBD` | `TBD` | `TBD` | |
+| Correctness score | `TBD` | `TBD` | `TBD` | |
+| Clarity score | `TBD` | `TBD` | `TBD` | |
+| Safety / premise handling | `TBD` | `TBD` | `TBD` | |
+| Utility proxy | `TBD` | `TBD` | `TBD` | Repair tokens and retries should still count as a cost. |
+| Unnecessary clarification rate | `n/a` | `n/a` | `TBD` | |
+| Wrong direct-answer rate | `TBD` | `TBD` | `n/a` | |
+| Silent misunderstanding risk | `TBD` | `TBD` | `n/a` | |
+| User-leaves-before-correction risk | `TBD` | `TBD` | `n/a` | |
+| Screenshot / quote misuse risk | `TBD` | `TBD` | `n/a` | |
+| Unnecessary refusal rate | `TBD` | `TBD` | `TBD` | |
 
----
+## Per-prompt results
 
-## Per-prompt template
-
-| ID | Prompt summary | Baseline decision | ICA decision | Clarifier asked | Final answer changed | Correctness delta | Safety delta | Notes |
+| ID | Prompt summary | Immediate-answer route | ICA route | Asked a question? | Did final answer change? | Correctness change | Safety change | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `AP-001` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |  |
-| `AP-002` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |  |
-| `AP-003` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |  |
+| `AP-001` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | |
+| `AP-002` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | |
+| `AP-003` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | |
 
----
+## What to explain after the test
 
-## Short narrative
+Keep the written summary short and answer these questions:
 
-Use this section for a concise interpretation after the benchmark is run:
+1. Which types of prompt improved most with ICA?
+2. Where did ICA ask a question that was not needed?
+3. Where did checking or rejecting a bad premise improve safety?
+4. Which clarification questions actually changed the final answer?
+5. How often did the immediate-answer route spend extra turns fixing the wrong interpretation?
+6. Does the clarification threshold need changing?
+7. Could any first answer easily be quoted or screenshotted in a misleading way?
+8. When both routes eventually reached the same quality, did the score still include the extra cost of repairing the first answer?
 
-1. Which prompt classes benefited most from ICA?
-2. Where did ICA ask unnecessarily?
-3. Where did refusal or redirect improve safety without harming usefulness?
-4. Which clarifiers changed the final answer materially?
-5. How often did the baseline enter a correction funnel before exposing the ambiguous term?
-6. What threshold or routing adjustments should be made before production use?
-7. Could any first direct answer be screenshotted or quote-mined as evidence for a misleading claim?
-8. If repaired-baseline quality was equalized with ICA in some cases, did the utility score still penalize delayed clarification correctly?
+## Publishing results
 
----
+Be clear about what was actually measured.
 
-## Publication note
+If the benchmark has not been run, say so.
 
-If the benchmark has not been run yet, say so explicitly.
-Do not present placeholders, estimates, or manually imagined values as measured evidence.
+Do not present placeholders, guesses or hand-written estimates as measured evidence.

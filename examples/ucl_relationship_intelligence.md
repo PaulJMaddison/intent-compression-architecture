@@ -1,75 +1,94 @@
 # UCL Relationship-Intelligence Example
 
-> **Status: reference/archive.** This note preserves an applied ICA theory/example from the archived repository. It is not the active Clarity implementation; current Clarity/ICA code lives at `C:\Kyntic\kynticai-clarity-gateway`.
+> **Historical example.** This shows how the old ICA idea could be used before searching relationship data. It is not the current Clarity Gateway implementation.
 
-This is an applied ICA use case, not a product implementation.
-It describes how the control-layer idea can be evaluated for a retrieval-backed relationship-intelligence workflow without exposing or assuming any proprietary system internals.
-
-## User Prompt
+## Example request
 
 ```text
 Prep me on Alex before the UCL partner call.
 ```
 
-## Why It Is Ambiguous
+At first glance this sounds simple, but important details are missing.
 
-The ambiguity is not just wording.
-Different interpretations require different evidence packs and different actions.
+The user could mean:
 
-| Possible intent | Evidence pack | Action |
+| What the user wants | Information needed | Likely result |
 | --- | --- | --- |
-| Meeting brief for a known sponsor | recent meetings, open actions, current account context, decision history | summarise relationship state and talking points |
-| Introduction path | mutual contacts, previous introductions, consent or sensitivity notes, current relationship path | suggest a warm-introduction route or next outreach step |
-| Risk or concern review | unresolved issues, contested facts, escalation notes, confidence gaps | recommend caution, evidence review, or human follow-up |
+| A meeting brief about a known contact | recent meetings, open actions, account context and decision history | summary and talking points |
+| A possible introduction | mutual contacts, previous introductions and relevant relationship information | suggested introduction route |
+| A risk or concern review | unresolved issues, disputed facts, escalations and gaps in evidence | caution, more evidence or human follow-up |
 
-## ICA Routing Principle
+These are different tasks. Fetching a large pile of information before working out which task matters can waste time and can produce the wrong answer.
 
-ICA should ask before retrieval only when the ambiguity changes the evidence pack or downstream action.
+## The simple ICA rule
 
-Ask first when the missing variable changes:
+**Ask before retrieving data only when the missing information would change what you retrieve or what you do next.**
 
-- which Alex, partner, organisation, or contact is in scope
-- whether the task is briefing, outreach, escalation, or no action
-- which time window or source classes should be retrieved
-- whether relationship evidence, risk evidence, or introduction-path evidence is needed
+Ask first if you need to know:
 
-Do not ask first when the same retrieval plan would be used either way.
-In those cases, retrieve the common evidence pack, state the working assumption, and keep uncertainty visible in the answer.
+- which Alex the user means
+- which organisation or contact is relevant
+- whether the user wants a briefing, introduction, risk review or something else
+- which time period matters
+- which types of source should be searched
 
-## Example Clarifier
+Do **not** ask if every reasonable interpretation needs the same information.
+
+In that case, retrieve the shared information, state the assumption clearly and continue.
+
+## Example clarification
 
 ```text
-Which Alex do you mean, and are you looking for a meeting brief, an introduction path, or a risk review?
+Which Alex do you mean, and do you want a meeting brief, an introduction path or a risk review?
 ```
 
-That question is useful only if the answer changes the retrieval plan or action.
-If the system already knows the call, attendee list, and intended next step from reliable context, asking again would be over-clarification.
+That question is useful only when the answer changes the search or the next action.
 
-## Probability Language
+If reliable context already tells the system which Alex is on the call and what the user is trying to do, asking again would just be annoying.
 
-Any probabilities attached to the intent hypotheses are priors for routing.
-They are not truth claims about whether a relationship exists, whether a person is important, or whether a source is correct.
+## What the probability numbers mean
 
-The user reply and retrieved evidence can update, override, or invalidate the priors.
-For example, a prior that the user wants a meeting brief might be high because the prompt says "partner call", but that prior does not prove which Alex is involved or what the relationship evidence will show.
+The old ICA format can attach probability estimates to possible meanings.
 
-## Benchmark Shape
+For example, because the prompt says "partner call", the system might think a meeting brief is the most likely intent.
 
-A small benchmark should compare:
+That number is only an estimate of **what the user probably wants**. It does not prove:
 
-- direct retrieval baseline: retrieve a broad evidence pack and answer under an implicit interpretation
-- ICA pre-retrieval route: ask only when evidence-pack or action divergence clears the threshold
-- repaired direct route: include the cost of the user correcting a wrong person, wrong organisation, wrong evidence pack, or wrong action
+- that a relationship exists
+- that a person is important
+- that a retrieved fact is true
+- that one source should be trusted
 
-Useful metrics include:
+The user's answer and the evidence found during retrieval can change those estimates.
 
-- evidence-pack divergence after clarification
-- wrong-person or wrong-organisation rate
-- action reversal after user correction
-- unnecessary pre-retrieval clarification rate
-- user correction burden
-- total tokens per resolved task
-- final answer changed rate
+## How this could be tested
 
-The success condition is not "ICA asks more".
-The success condition is that ICA asks before retrieval when, and only when, doing so prevents a materially wrong evidence pack or action.
+A useful small test would compare three approaches.
+
+### 1. Retrieve immediately
+
+Search broadly and answer using the system's first guess about the user's meaning.
+
+### 2. ICA before retrieval
+
+Ask one short question only when it would change the information being retrieved or the action taken.
+
+### 3. Retrieve immediately, then repair
+
+Include what happens when the first route chooses the wrong person, organisation, evidence or action and the user has to correct it.
+
+Useful measurements include:
+
+- how often clarification changed the information retrieved
+- how often the immediate route focused on the wrong person or organisation
+- how often user correction changed the final action
+- how often ICA asked an unnecessary question
+- how much work the user had to do to correct the AI
+- total tokens needed to reach the right result
+- how often clarification materially changed the final answer
+
+## What success looks like
+
+Success does **not** mean ICA asks more questions.
+
+Success means it asks at the right moment: before an unclear request would cause the system to retrieve the wrong information or take the wrong action, while staying out of the way when the meaning is already clear enough.
