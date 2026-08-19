@@ -1,72 +1,119 @@
 # KynticAI Clarity Gateway — Reference Archive
 
-> **Status: historical/reference archive.** This repository preserves the engineering lineage that led from **Intent Compression Architecture (ICA)** to the KynticAI **Clarity Gateway**. It is intentionally useful, executable, and reproducible, but it is **not the active product source of truth**.
+> **This is a historical reference repo.** It shows how the ideas behind KynticAI's Clarity Gateway developed. It is not the current production Clarity Gateway code.
 
-ICA started from a simple failure mode: an AI system can give a plausible answer before it has resolved what the user actually means. The work in this archive turned that observation into a control-plane design: model-assisted intent hypotheses, separate ambiguity and risk signals, deterministic routing, an expected-utility gate for clarification, structured outputs, traceable decisions, and later an agentic task-state framing.
+## What is this?
 
-This archive exists so that evolution remains inspectable rather than being overwritten by the current implementation.
+This repo preserves an earlier project called **Intent Compression Architecture (ICA)**.
 
-## Start here
+ICA started from a simple problem:
 
-- **How the idea evolved:** [`EVOLUTION.md`](EVOLUTION.md)
-- **Archive preservation rules:** [`ARCHIVE_POLICY.md`](ARCHIVE_POLICY.md)
-- **Original long-form README snapshot:** [`docs/legacy/README-2026-08-18.md`](docs/legacy/README-2026-08-18.md)
-- **Original website snapshot:** [`docs/legacy/index-2026-08-18.html`](docs/legacy/index-2026-08-18.html)
-- **Engineering proposal:** [`ICA_Engineering_Design_Proposal1.pdf`](ICA_Engineering_Design_Proposal1.pdf)
-- **Architecture diagram:** [`diagrams/architecture.png`](diagrams/architecture.png)
-- **Machine-readable decision contract:** [`spec/clarifier_output.schema.json`](spec/clarifier_output.schema.json)
-- **Reference Python package:** [`src/ica_core/`](src/ica_core/)
-- **Evaluation material:** [`eval/`](eval/)
-- **Applied UCL example:** [`examples/ucl_relationship_intelligence.md`](examples/ucl_relationship_intelligence.md)
+**AI systems often answer before they are sure what the user actually means.**
 
-## What this archive established
+For example:
 
-The historical implementation makes several architectural ideas concrete:
+> "Make this API faster."
 
-1. **Intent is a control-plane concern.** Ambiguity is handled before answer generation or agent action rather than repaired only after a wrong first move.
-2. **Clarification should be selective.** The core rule is `ask iff max_q U(q | x) > tau`: clarification has to earn the extra turn.
-3. **Ambiguity and risk are different signals.** A clear but risky request is not treated as merely ambiguous, and a false premise can route differently from an ordinary clarifier.
-4. **Probabilistic estimates can feed deterministic orchestration.** The provider proposes structured estimates; local policy code selects the route.
-5. **Control decisions should be inspectable.** The reference contract exposes hypotheses, scores, candidate clarifiers, selected route, constraints, and audit metadata.
-6. **The same principle extends to agents.** The later work reframed intent compression as preserving verified task state while filtering semantic noise and avoiding repeated failed actions.
+That could mean:
 
-## What it does *not* establish
+- reduce response time
+- handle more users at once
+- use less compute
+- make development faster
 
-This repository should not be read as evidence that the archived Python package is the current Clarity Gateway, that its mock-provider probabilities are calibrated production estimates, or that the pilot benchmark generalises to production traffic. No live provider adapter is bundled here and no hosted gateway is represented by this code.
+If an AI guesses the wrong meaning, it can spend a lot of time producing a good answer to the wrong question.
 
-The evaluation material is preserved because it shows how the thesis was tested and refined. Its limitations are part of the archive, not something to hide.
+ICA explored a better approach: **work out whether the meaning is clear before acting.**
 
-## Evolution at a glance
+If the meaning is clear, answer normally.
 
-| Period | Milestone | Why it mattered |
-| --- | --- | --- |
-| May 2026 | Ambiguous-prompt pilot and correction-funnel analysis | Moved the problem from “bad answers” to **wrong semantic funnels** and silent failure. |
-| May 2026 | Reproducible local validation | Made the proposal testable without paid APIs; local validation deliberately became canonical. |
-| May 2026 | `ica-core` v0.1.0 | Turned the idea into a provider boundary, typed contract, deterministic policy, CLI, tests, and privacy-aware tracing. |
-| May 2026 | ICA v1.0.0 | Consolidated the expected-utility policy, canonical example, benchmark framing, and proposal artefacts. |
-| May 2026 | Agentic control-plane framing | Extended the same principle from chat clarification to long-running task-state control. |
-| June 2026 | UCL relationship-intelligence example | Showed that clarification matters when ambiguity changes retrieval scope, evidence pack, or action. |
-| June–August 2026 | Archive transition | Preserved ICA as historical lineage while active Clarity Gateway implementation moved elsewhere. |
-| August 2026 | Archive hardening | Added explicit provenance, contract-parity checks, stronger invariants, safer tracing, and a clean public archive front door. |
+If one short question would prevent a much bigger mistake, ask that question first.
 
-See [`EVOLUTION.md`](EVOLUTION.md) for commit-linked detail.
+That basic idea later became part of the thinking behind the **KynticAI Clarity Gateway**.
 
-## Reference implementation
+## The main idea in plain English
 
-The Python package remains executable because an architecture archive is more valuable when its contracts and decisions can still be replayed.
+The system looks at a request before the main AI answers or takes an action.
 
-### Core package and tests
+It asks four simple questions:
+
+1. **Is the request clear?**
+2. **Could it reasonably mean more than one thing?**
+3. **Would choosing the wrong meaning materially change the answer or action?**
+4. **Is asking one short question more useful than guessing?**
+
+It then chooses one of four actions:
+
+- **Answer directly** — the request is clear enough.
+- **Ask a question** — one short clarification could prevent a wrong answer.
+- **Check the premise** — the request may be based on something false or misleading.
+- **Refuse or redirect** — the request should not be completed as written.
+
+The important point is that the system does **not** ask questions all the time. It only asks when the extra question is likely to save more time, mistakes, risk or wasted work than it costs.
+
+## Why this mattered
+
+The original work moved through several stages.
+
+First, it focused on ambiguous chat questions and the cost of answering the wrong interpretation.
+
+Then it turned that idea into working Python code with:
+
+- a clear decision format
+- simple routing rules
+- tests
+- a command-line demo
+- local tracing
+- benchmark examples
+
+Later, the same idea was applied to AI agents and coding tools.
+
+For an agent, the problem is not only understanding the first question. It also needs to remember:
+
+- the original goal
+- what has already been proved
+- what failed
+- what constraints still matter
+- what the next useful action is
+
+That is the bridge from the original ICA work to the later **Clarity Gateway** direction.
+
+## Where to look
+
+If you want to understand the project without reading everything, start here:
+
+- [`EVOLUTION.md`](EVOLUTION.md) — how the idea changed over time, linked to the original commits
+- [`ICA_Engineering_Design_Proposal1.pdf`](ICA_Engineering_Design_Proposal1.pdf) — the original engineering proposal
+- [`diagrams/architecture.png`](diagrams/architecture.png) — the architecture diagram
+- [`src/ica_core/`](src/ica_core/) — the working Python reference code
+- [`spec/clarifier_output.schema.json`](spec/clarifier_output.schema.json) — the decision format used by the reference implementation
+- [`eval/`](eval/) — the early benchmark and evaluation work
+- [`examples/ucl_relationship_intelligence.md`](examples/ucl_relationship_intelligence.md) — an example of applying the idea to retrieval and relationship data
+
+The older long-form material has not been deleted. It is preserved exactly as historical material:
+
+- [`docs/legacy/README-2026-08-18.md`](docs/legacy/README-2026-08-18.md)
+- [`docs/legacy/index-2026-08-18.html`](docs/legacy/index-2026-08-18.html)
+
+## Important limitation
+
+The Python code in this repo is a **reference implementation**, not the current Clarity Gateway.
+
+It uses an offline mock provider so the behaviour can be tested without paid APIs or real credentials.
+
+The early benchmark results are also historical experiments. They show how the idea was tested and improved; they should not be treated as proof of current production performance.
+
+## Running the reference code
+
+Create a Python environment and install the package:
 
 ```bash
 python -m venv .venv
-# activate the virtual environment for your shell
 python -m pip install -e ".[dev]"
 python -m pytest
 ```
 
-### Full archive validation
-
-The proposal/evaluation artefact tooling uses the additional dependencies in `requirements.txt`.
+For the full archive checks:
 
 ```bash
 python -m pip install -r requirements.txt
@@ -74,7 +121,7 @@ python -m pip install -e ".[dev]"
 bash scripts/validate_local.sh
 ```
 
-PowerShell:
+On Windows PowerShell:
 
 ```powershell
 python -m pip install -r requirements.txt
@@ -82,39 +129,37 @@ python -m pip install -e ".[dev]"
 .\scripts\validate_local.ps1
 ```
 
-`requirements.lock` pins the **archive artefact/evaluation toolchain**. It is not a complete lock of the package plus all development dependencies.
+## GitHub Actions
 
-The validation path checks Python compilation, JSON Schema validity, schema/Pydantic contract parity, tests, package build, CLI smoke paths, the example CLI, and pilot report generation. It remains local by design; an earlier GitHub Actions schema workflow was intentionally removed when local reproducibility became canonical.
+**GitHub Actions are intentionally not used in this repository.**
 
-## Contract integrity
+There are no workflow files under `.github/workflows`, so pushes and pull requests do not start GitHub Actions jobs from this repo.
 
-The hand-authored JSON Schema is the portable contract and the Pydantic models are the executable reference model. `scripts/validate_contract_parity.py` prevents their top-level and nested field sets from silently drifting apart.
+Validation is deliberately run locally using the scripts above. This preserves the way the archive was designed and avoids adding cloud automation to a historical reference project.
 
-Additional runtime invariants include:
+## Privacy and security
 
-- non-blank intent labels and clarifier questions
-- finite scores and non-negative information gain
-- unique candidate clarifier IDs
-- selected IDs that reference real candidates
-- an `ask_clarifier` route that names the selected candidate
+Normal tests do not need real API keys.
 
-These checks harden the reference implementation without changing the historical routing thesis.
+Do not add:
 
-## Tracing and privacy
+- API keys or access tokens
+- customer data
+- private prompts
+- production traces
+- real `.env` files
 
-Tracing is off by default. When JSONL tracing is enabled, query text is hashed by default and clarifying-question text is now hashed as well. Raw query capture and raw clarifier capture require separate explicit opt-ins.
+Tracing is off by default. When enabled, query and clarification text are protected by safer defaults unless raw capture is explicitly requested.
 
-The built-in redactor is deliberately described as coarse debugging assistance, **not** a production DLP or anonymisation system. A real deployment still needs its own retention, consent, access-control, and data-classification policy.
+See [`SECURITY.md`](SECURITY.md) for more detail.
 
-## Maintenance model
+## Preserving the history
 
-Historical snapshots and published artefacts are preserved rather than silently modernised. Maintained archive surfaces — this README, the reference runtime, contract validation, security notes, and evolution map — can be improved as long as the changes do not rewrite what the historical milestones claimed at the time.
+This repo is useful because it shows **how the idea evolved**, including its early assumptions and limitations.
 
-See [`ARCHIVE_POLICY.md`](ARCHIVE_POLICY.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md).
+Historical files should therefore be preserved rather than silently rewritten to look like the current product.
 
-## Security
-
-No live API credential is required for the normal test or demo path. Do not add real keys, tokens, customer data, or private prompts to fixtures, traces, issues, or committed `.env` files. See [`SECURITY.md`](SECURITY.md).
+See [`ARCHIVE_POLICY.md`](ARCHIVE_POLICY.md) for the preservation rules.
 
 ## License
 
