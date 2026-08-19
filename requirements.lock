@@ -1,3 +1,5 @@
+# Pinned archive artefact/evaluation toolchain.
+# This is not a complete lock for ica-core + .[dev]; see pyproject.toml.
 pandas==3.0.1
 tiktoken==0.12.0
 jsonschema==4.26.0

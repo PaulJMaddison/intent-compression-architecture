@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 from uuid import uuid4
 
+from pydantic import ValidationError
+
 from ica_core.config import ICAConfig
-from ica_core.core import CONTROL_SYSTEM_PROMPT, IntentCompressor
+from ica_core.core import CONTROL_SYSTEM_PROMPT, IntentCompressionError, IntentCompressor
 from ica_core.policy import PolicyConfig
 from ica_core.providers.base import IntentProvider
 from ica_core.providers.mock import MockIntentProvider
@@ -17,10 +20,20 @@ from ica_core.schemas import ClarifierOutput
 from ica_core.tracing import JSONLTraceSink, NoOpTraceSink
 
 
+def _finite_float(value: str) -> float:
+    try:
+        parsed = float(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("must be a number") from exc
+    if not math.isfinite(parsed):
+        raise argparse.ArgumentTypeError("must be a finite number")
+    return parsed
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ica",
-        description="Run the ICA clarification-first control layer.",
+        description="Run the archived ICA clarification-first control layer.",
     )
     parser.add_argument("query", nargs="*", help="User query. Reads stdin when omitted.")
     parser.add_argument("--provider", default=None, help="Provider adapter name. Default: mock.")
@@ -28,44 +41,34 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--query-id", default=None, help="Optional compatibility trace/request id.")
     parser.add_argument("--trace-id", default=None, help="Explicit trace id. Generated when tracing.")
     parser.add_argument(
-        "--threshold",
-        "--tau",
-        dest="tau",
-        type=float,
-        default=None,
+        "--threshold", "--tau", dest="tau", type=_finite_float, default=None,
         help="Expected-utility threshold for clarification.",
     )
     parser.add_argument("--verbose", action="store_true", help="Show extra routing context.")
     parser.add_argument("--json", action="store_true", help="Print the full decision as JSON.")
+    parser.add_argument("--trace", action="store_true", help="Append privacy-conscious JSONL traces.")
     parser.add_argument(
-        "--trace",
-        action="store_true",
-        help="Append privacy-conscious JSONL traces.",
-    )
-    parser.add_argument(
-        "--trace-path",
-        default="ica-traces.jsonl",
+        "--trace-path", default="ica-traces.jsonl",
         help="Trace JSONL path used with --trace. Default: ica-traces.jsonl.",
     )
     parser.add_argument(
-        "--trace-query",
-        choices=("hash", "redacted", "raw", "none"),
-        default="hash",
+        "--trace-query", choices=("hash", "redacted", "raw", "none"), default="hash",
         help="How query text is represented in traces. Default: hash.",
     )
     parser.add_argument(
-        "--trace-metadata",
-        action="store_true",
+        "--trace-metadata", action="store_true",
         help="Include request metadata in traces. Off by default.",
     )
     parser.add_argument(
-        "--dry-run",
-        action="store_true",
+        "--trace-clarifier-text", action="store_true",
+        help="Store raw clarifying-question text in traces. Off by default.",
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true",
         help="Show the planned provider call without running analysis.",
     )
     parser.add_argument(
-        "--non-strict",
-        action="store_true",
+        "--non-strict", action="store_true",
         help="Return explicit fallback decisions instead of raising provider/validation errors.",
     )
     return parser
@@ -79,10 +82,15 @@ def main(argv: list[str] | None = None) -> int:
     if not query:
         parser.error("a query is required via arguments or stdin")
 
-    config = ICAConfig()
+    try:
+        config = ICAConfig()
+    except ValidationError as exc:
+        parser.error(f"invalid ICA environment configuration: {_validation_summary(exc)}")
+
     provider_name = (args.provider or config.provider).lower()
     model_name = args.model or config.model_name
     tau = args.tau if args.tau is not None else config.tau
+    policy_config = _policy_config(config, tau=tau)
     trace_path = args.trace_path if args.trace else None
     trace_id = args.trace_id or args.query_id or (f"trace-{uuid4().hex}" if args.trace else None)
 
@@ -91,7 +99,7 @@ def main(argv: list[str] | None = None) -> int:
             query=query,
             provider_name=provider_name,
             model_name=model_name,
-            tau=tau,
+            tau=policy_config.tau,
             trace_path=trace_path,
             trace_id=trace_id,
             json_output=args.json,
@@ -108,31 +116,48 @@ def main(argv: list[str] | None = None) -> int:
             Path(trace_path),
             query_mode=args.trace_query,
             include_request_metadata=args.trace_metadata,
+            include_clarifier_text=args.trace_clarifier_text,
         )
-        if args.trace
-        else NoOpTraceSink()
+        if args.trace else NoOpTraceSink()
     )
     compressor = IntentCompressor(
         provider=provider,
-        policy_config=PolicyConfig(tau=tau),
+        policy_config=policy_config,
         strict=not args.non_strict,
         trace_sink=trace_sink,
     )
-    decision = compressor.process(
-        query,
-        trace_id=trace_id,
-        metadata={
-            "cli_provider": provider_name,
-            "model": model_name,
-        },
-    )
+
+    try:
+        decision = compressor.process(
+            query,
+            trace_id=trace_id,
+            metadata={"cli_provider": provider_name, "model": model_name},
+        )
+    except IntentCompressionError as exc:
+        print(f"ica: {exc}", file=sys.stderr)
+        return 2
+    except OSError as exc:
+        print(f"ica: I/O error: {exc}", file=sys.stderr)
+        return 2
 
     if args.json:
         print(json.dumps(decision.model_dump(mode="json"), indent=2))
     else:
         _print_readable(decision, verbose=args.verbose, trace_path=trace_path)
-
     return 0
+
+
+def _policy_config(config: ICAConfig, *, tau: float) -> PolicyConfig:
+    values = PolicyConfig.from_config(config).model_dump()
+    values["tau"] = tau
+    return PolicyConfig.model_validate(values)
+
+
+def _validation_summary(exc: ValidationError) -> str:
+    return "; ".join(
+        f"{'.'.join(str(part) for part in error['loc'])}: {error['msg']}"
+        for error in exc.errors(include_url=False)
+    )
 
 
 def _read_query(query_parts: list[str]) -> str:
@@ -147,16 +172,11 @@ def _build_provider(provider_name: str) -> IntentProvider:
     if provider_name == "mock":
         return MockIntentProvider()
     raise ValueError(
-        f"provider '{provider_name}' is not available in this build; use --provider mock"
+        f"provider '{provider_name}' is not available in this archive; use --provider mock"
     )
 
 
-def _print_readable(
-    decision: ClarifierOutput,
-    *,
-    verbose: bool,
-    trace_path: str | None,
-) -> None:
+def _print_readable(decision: ClarifierOutput, *, verbose: bool, trace_path: str | None) -> None:
     print(f"decision: {decision.decision}")
     print(f"ambiguity_score: {decision.ambiguity_score:.2f}")
     print(f"risk_score: {decision.risk_score:.2f}")
@@ -182,36 +202,23 @@ def _print_readable(
             print("answer_constraints:")
             for constraint in decision.answer_constraints:
                 print(f"  - {constraint}")
-
     if trace_path:
         print(f"trace_written: {trace_path}")
 
 
 def _print_dry_run(
-    *,
-    query: str,
-    provider_name: str,
-    model_name: str,
-    tau: float,
-    trace_path: str | None,
-    trace_id: str | None,
-    json_output: bool,
+    *, query: str, provider_name: str, model_name: str, tau: float,
+    trace_path: str | None, trace_id: str | None, json_output: bool,
 ) -> None:
     payload = {
-        "dry_run": True,
-        "provider": provider_name,
-        "model": model_name,
-        "tau": tau,
-        "trace_id": trace_id,
-        "trace_path": trace_path,
-        "query_length": len(query),
-        "system_instructions": CONTROL_SYSTEM_PROMPT,
+        "dry_run": True, "provider": provider_name, "model": model_name,
+        "tau": tau, "trace_id": trace_id, "trace_path": trace_path,
+        "query_length": len(query), "system_instructions": CONTROL_SYSTEM_PROMPT,
         "response_model": "ClarifierOutput",
     }
     if json_output:
         print(json.dumps(payload, indent=2))
         return
-
     print("dry_run: true")
     print(f"provider: {provider_name}")
     print(f"model: {model_name}")

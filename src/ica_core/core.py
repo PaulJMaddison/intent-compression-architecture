@@ -8,12 +8,7 @@ from typing import Any, TypeAlias
 from pydantic import ValidationError
 
 from ica_core.policy import ClarificationPolicy, PolicyConfig
-from ica_core.providers.base import (
-    IntentProvider,
-    ProviderError,
-    ProviderRequest,
-    ProviderResponse,
-)
+from ica_core.providers.base import IntentProvider, ProviderRequest, ProviderResponse
 from ica_core.schemas import AnswerDelta, ClarifierOutput, Decision, IntentHypothesis
 from ica_core.tracing import NoOpTraceSink, TraceSink, decision_trace_payload
 
@@ -44,9 +39,11 @@ class IntentCompressor:
     """Provider-agnostic ICA engine.
 
     Strict mode is enabled by default: provider and validation failures raise
-    explicit exceptions. With ``strict=False``, failures return a conservative
-    ``answer_direct`` fallback whose metadata marks the fallback source and
-    reason so downstream systems can audit it.
+    explicit exceptions. With ``strict=False``, failures return an auditable
+    direct-answer fallback with constraints that prohibit relying on unstated
+    intent assumptions. Raw provider exception messages are deliberately not
+    copied into fallback metadata because adapter errors can contain sensitive
+    request data.
     """
 
     def __init__(
@@ -71,7 +68,7 @@ class IntentCompressor:
         self,
         user_query: str,
         trace_id: str | None = None,
-        metadata: dict[str, Any] | None = None,
+        metadata: Mapping[str, Any] | None = None,
     ) -> ClarifierDecision:
         """Resolve whether the system should answer, clarify, premise-check, or redirect."""
 
@@ -79,14 +76,15 @@ class IntentCompressor:
         if not query:
             raise ValueError("user_query must not be blank")
 
-        request = self._build_request(query, trace_id=trace_id, metadata=metadata)
+        request_metadata = dict(metadata or {})
+        request = self._build_request(query, trace_id=trace_id, metadata=request_metadata)
         self.trace_sink.record(
             "ica.process.start",
             {
                 "trace_id": trace_id,
                 "provider": self._provider_name(),
                 "query": query,
-                "request_metadata": dict(metadata or {}),
+                "request_metadata": request_metadata,
             },
         )
 
@@ -96,28 +94,26 @@ class IntentCompressor:
             if self.strict:
                 raise ProviderCallError("ICA provider call failed") from exc
             decision = self._fallback_decision(
-                query,
                 trace_id=trace_id,
-                metadata=metadata,
+                metadata=request_metadata,
                 reason="provider_error",
-                detail=str(exc),
+                error_type=type(exc).__name__,
             )
             self._trace_decision(decision)
             return decision
 
         try:
             analysis = self._validate_response(response, trace_id=trace_id)
-        except ValidationError as exc:
+        except (ValidationError, TypeError, ValueError) as exc:
             if self.strict:
                 raise StructuredOutputValidationError(
-                    "provider response failed ICA schema validation"
+                    "provider response failed ICA contract validation"
                 ) from exc
             decision = self._fallback_decision(
-                query,
                 trace_id=trace_id,
-                metadata=metadata,
+                metadata=request_metadata,
                 reason="validation_error",
-                detail=str(exc),
+                error_type=type(exc).__name__,
             )
             self._trace_decision(decision)
             return decision
@@ -129,7 +125,7 @@ class IntentCompressor:
             provider_response=response,
             provider_decision=provider_decision,
             trace_id=trace_id,
-            metadata=metadata,
+            metadata=request_metadata,
             fallback=False,
         )
         self._trace_decision(final)
@@ -144,20 +140,20 @@ class IntentCompressor:
     ) -> ClarifierDecision:
         """Backward-compatible alias for the first scaffold's controller API."""
 
-        return self.process(query, trace_id=query_id, metadata=dict(context or {}))
+        return self.process(query, trace_id=query_id, metadata=context)
 
     def _build_request(
         self,
         query: str,
         *,
         trace_id: str | None,
-        metadata: dict[str, Any] | None,
+        metadata: Mapping[str, Any],
     ) -> ProviderRequest:
         return ProviderRequest(
             system_instructions=self.system_instructions,
             user_query=query,
             trace_id=trace_id,
-            metadata=metadata or {},
+            metadata=dict(metadata),
             response_schema=ClarifierOutput.model_json_schema(),
             output_model=ClarifierOutput,
         )
@@ -168,6 +164,11 @@ class IntentCompressor:
         *,
         trace_id: str | None,
     ) -> ClarifierOutput:
+        if not isinstance(response, ProviderResponse):
+            raise TypeError("provider must return ProviderResponse")
+        if not isinstance(response.metadata, Mapping):
+            raise TypeError("provider response metadata must be a mapping")
+
         analysis = ClarifierOutput.model_validate(response.payload)
         if trace_id is not None and analysis.trace_id is None:
             analysis = analysis.model_copy(update={"trace_id": trace_id})
@@ -180,7 +181,7 @@ class IntentCompressor:
         provider_response: ProviderResponse,
         provider_decision: str,
         trace_id: str | None,
-        metadata: dict[str, Any] | None,
+        metadata: Mapping[str, Any],
         fallback: bool,
     ) -> ClarifierOutput:
         merged_metadata = dict(decision.metadata or {})
@@ -206,19 +207,17 @@ class IntentCompressor:
 
     def _fallback_decision(
         self,
-        query: str,
         *,
         trace_id: str | None,
-        metadata: dict[str, Any] | None,
+        metadata: Mapping[str, Any],
         reason: str,
-        detail: str,
+        error_type: str,
     ) -> ClarifierOutput:
-        del query
         fallback_metadata: dict[str, Any] = {
             "source": "fallback",
             "fallback": True,
             "fallback_reason": reason,
-            "fallback_detail": detail,
+            "fallback_error_type": error_type,
             "provider_name": self._provider_name(),
             "policy_applied": False,
         }
@@ -251,16 +250,13 @@ class IntentCompressor:
             safe_redirect=None,
             rationale=(
                 "Provider analysis was unavailable or invalid; returned an "
-                "explicit conservative fallback."
+                "explicit constrained fallback."
             ),
             metadata=fallback_metadata,
         )
 
     def _trace_decision(self, decision: ClarifierOutput) -> None:
-        self.trace_sink.record(
-            "ica.process.decision",
-            decision_trace_payload(decision),
-        )
+        self.trace_sink.record("ica.process.decision", decision_trace_payload(decision))
 
     def _provider_name(self) -> str:
         return getattr(self.provider, "name", self.provider.__class__.__name__)

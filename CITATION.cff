@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this archive in research or engineering work, please cite it as the historical KynticAI Clarity Gateway / Intent Compression Architecture reference."
+title: "KynticAI Clarity Gateway Reference Archive: Intent Compression Architecture"
+type: software
+authors:
+  - family-names: Maddison
+    given-names: Paul
+version: 1.0.0
+date-released: 2026-05-12
+repository-code: "https://github.com/PaulJMaddison/kynticai-clarity-gateway-reference"
+license: MIT
+abstract: "Historical and executable reference for Intent Compression Architecture (ICA), preserving the clarification-first, expected-utility and agentic control-plane lineage that evolved toward KynticAI Clarity Gateway."

@@ -1,5 +1,6 @@
-# Intentionally loose dependency set for quick setup.
-# Use requirements.lock for the pinned versions used in the current reproducibility path.
+# Archive artefact/evaluation tooling (intentionally loose for quick setup).
+# Package/runtime and test dependencies are declared in pyproject.toml.
+# Use requirements.lock for pinned versions of this artefact toolchain.
 pandas
 tiktoken
 jsonschema
