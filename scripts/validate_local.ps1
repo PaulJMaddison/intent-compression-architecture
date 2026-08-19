@@ -7,22 +7,9 @@ $pythonCmd = if ($env:PYTHON) { $env:PYTHON } else { "python" }
 
 Set-Location $repoRoot
 
-$packageFiles = @(
-    "src/ica_core/__init__.py",
-    "src/ica_core/config.py",
-    "src/ica_core/schemas.py",
-    "src/ica_core/policy.py",
-    "src/ica_core/core.py",
-    "src/ica_core/tracing.py",
-    "src/ica_core/cli.py",
-    "src/ica_core/providers/__init__.py",
-    "src/ica_core/providers/base.py",
-    "src/ica_core/providers/mock.py",
-    "examples/cli_demo.py"
-)
-
-& $pythonCmd -m py_compile eval/build_pilot_report.py scripts/build_repo_artifacts.py scripts/validate_schema.py @packageFiles
+& $pythonCmd -m compileall -q src tests eval examples scripts
 & $pythonCmd scripts/validate_schema.py
+& $pythonCmd scripts/validate_contract_parity.py
 & $pythonCmd -m pytest
 & $pythonCmd -m build
 & $pythonCmd -m ica_core.cli --help

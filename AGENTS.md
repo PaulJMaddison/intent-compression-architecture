@@ -1,30 +1,55 @@
 # AGENTS.md
 
-## Project Overview
+## Repository role
 
-Intent Compression Architecture is a reference/archive Python implementation and documentation package for an offline clarification/control-plane policy. It preserves useful ICA theory, pilot, validation, and mock-provider material, but it is not the active KynticAI Clarity Engine / ICA source of truth. Current implementation work lives at `C:\Kyntic\kynticai-clarity-gateway`. The default local provider in this archive is the deterministic mock provider.
+This repository is a **reference/archive** for Intent Compression Architecture (ICA), preserving the design, benchmark material and offline Python implementation that form part of the engineering lineage toward KynticAI Clarity Gateway.
 
-## Build/Test Commands
+It is not the active product source of truth. Do not infer current product behaviour from this archive or add private/local workspace paths as public routing instructions.
 
-- Local validation: `python -m pip install -r requirements.txt`, `python -m pip install -e ".[dev]"`, then `.\scripts\validate_local.ps1`.
-- Manual safe checks: `python scripts\validate_schema.py`, `python -m pytest`, `python -m build`, and CLI smoke checks with `--provider mock`.
-- Laptop local-folder rule: before running tests on this machine, check `C:\Kyntic\UCL-local-aidocs\LOCAL_LAPTOP_TEST_COMMANDS.md` and use the nearest safe command for the folder touched; docs-only changes can use `git diff --check`.
+## Preservation rules
 
-## External Proof Boundary
+- Read `ARCHIVE_POLICY.md` before making broad documentation or artefact changes.
+- Treat `docs/legacy/` as frozen point-in-time snapshots.
+- Preserve published proposal and benchmark provenance; corrections should be additive and explained.
+- Keep the root README, evolution map, runtime, schema and validation helpers maintainable.
+
+## Build and test
+
+Core development:
+
+- `python -m pip install -e ".[dev]"`
+- `python -m pytest`
+
+Full archive validation:
+
+- install `requirements.txt` (or `requirements.lock` for the pinned artefact toolchain)
+- install `.[dev]`
+- run `bash scripts/validate_local.sh` or `.\scripts\validate_local.ps1`
+
+The validation path compiles Python, validates the JSON Schema and example, checks schema/Pydantic parity, runs tests, builds the package, exercises CLI smoke paths and rebuilds the pilot report.
+
+## External proof boundary
 
 - Do not add live OpenAI, xAI, hosted API, or paid-provider calls to default validation.
-- No live provider adapter is bundled today. Any future live API proof must require explicit opt-in, normally `KYNTIC_RUN_E2E_TESTS=1`, and must not require real provider credentials by default.
+- No live provider adapter is bundled in the archive.
+- Any future live proof must be explicit opt-in and must never require real credentials for routine validation.
 
-## Git Safety — Mandatory for All Agents
+## Privacy and secrets
 
-- Work only on the branch the user provides or explicitly authorises. Preserve all existing and unrelated changes.
-- Never run `git stash`, `git stash drop`, `git reset --hard`, `git clean`, branch deletion, force checkout (`git checkout -f` or equivalent), force push (`--force` or `--force-with-lease`), or any other destructive Git operation.
-- If Git state prevents safe continuation, stop and report the exact current branch and `git status` instead of attempting to repair Git state autonomously.
-- Never reconstruct lost or uncommitted code from conversational memory. If changes appear to have been lost, stop immediately and report the exact Git state; preserve recoverable objects rather than recreating work from memory.
-- Never discard, overwrite, or rewrite uncommitted work unless the user explicitly directs that exact action.
+- Never commit API keys, `.env` secrets, production traces, private prompts or customer data.
+- Preserve privacy-safe trace defaults. Raw query or clarifier capture must remain explicit opt-in behaviour.
+- Treat the built-in redactor as a debugging convenience, not a production DLP system.
 
-## State/Update Expectations
+## Git safety — mandatory
 
-- Check `git status` before editing and preserve unrelated local changes.
-- Keep README, proposal artifacts, schema examples, and validation docs aligned when changing architecture claims.
-- Record commands run, skipped checks, and any residual risk in the relevant local work log when this repo is part of broader Kyntic workspace work.
+- Work only on the branch the user provides or explicitly authorises. Preserve unrelated changes.
+- Never run `git stash`, `git stash drop`, `git reset --hard`, `git clean`, branch deletion, force checkout, force push, or another destructive Git operation unless the user explicitly directs that exact action.
+- If Git state prevents safe continuation, report it instead of autonomously destroying or reconstructing work.
+- Never recreate lost uncommitted code from conversational memory.
+
+## Change quality
+
+- Fix issues rather than merely documenting them when a safe correction is possible.
+- Add boundary, malformed-input, state, failure-path and privacy tests for runtime changes.
+- Keep `spec/clarifier_output.schema.json` and `ClarifierOutput` structurally aligned.
+- Record meaningful archive/runtime changes in `CHANGELOG.md`.

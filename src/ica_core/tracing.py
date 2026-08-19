@@ -26,11 +26,7 @@ class TraceEvent:
     def to_json_dict(self) -> dict[str, Any]:
         """Return a JSON-serializable event representation."""
 
-        return {
-            "timestamp": self.timestamp.isoformat(),
-            "name": self.name,
-            **self.payload,
-        }
+        return {"timestamp": self.timestamp.isoformat(), "name": self.name, **self.payload}
 
 
 class TraceSink(Protocol):
@@ -60,9 +56,9 @@ class InMemoryTraceSink:
 class JSONLTraceSink:
     """Append lightweight intent-resolution traces to a local JSONL file.
 
-    Raw query text and request metadata are excluded by default. If query text is
-    useful for a local demo, choose ``query_mode="redacted"`` or explicitly
-    choose ``query_mode="raw"``.
+    Raw query text, clarifier text, and request metadata are excluded by default.
+    Query text can be hashed, coarsely redacted, stored raw, or omitted. Clarifier
+    text is hashed unless ``include_clarifier_text=True`` is explicitly selected.
     """
 
     def __init__(
@@ -71,16 +67,19 @@ class JSONLTraceSink:
         *,
         query_mode: QueryTraceMode = "hash",
         include_request_metadata: bool = False,
+        include_clarifier_text: bool = False,
     ) -> None:
         self.path = Path(path)
         self.query_mode = query_mode
         self.include_request_metadata = include_request_metadata
+        self.include_clarifier_text = include_clarifier_text
 
     def record(self, name: str, payload: dict[str, Any]) -> None:
         event = TraceEvent(name=name, payload=self._sanitize_payload(payload))
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        serialized = json.dumps(event.to_json_dict(), sort_keys=True) + "\n"
         with self.path.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(event.to_json_dict(), sort_keys=True) + "\n")
+            handle.write(serialized)
 
     def _sanitize_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
         sanitized = dict(payload)
@@ -89,27 +88,43 @@ class JSONLTraceSink:
         if isinstance(query, str):
             sanitized.update(query_trace_fields(query, mode=self.query_mode))
 
+        clarifying_question = sanitized.pop("clarifying_question", None)
+        if isinstance(clarifying_question, str):
+            if self.include_clarifier_text:
+                sanitized["clarifying_question"] = clarifying_question
+            else:
+                sanitized["clarifying_question_hash"] = text_hash(clarifying_question)
+
         if not self.include_request_metadata:
             sanitized.pop("request_metadata", None)
             metadata = sanitized.get("metadata")
             if isinstance(metadata, dict):
                 sanitized["metadata"] = {
-                    key: value
-                    for key, value in metadata.items()
-                    if key != "request_metadata"
+                    key: value for key, value in metadata.items() if key != "request_metadata"
                 }
 
         return _json_safe(sanitized)
 
 
-def query_hash(query: str) -> str:
+def text_hash(text: str) -> str:
     """Return a short stable hash for privacy-preserving trace joins."""
 
-    return hashlib.sha256(query.encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+
+
+def query_hash(query: str) -> str:
+    """Backward-compatible alias for hashing query text."""
+
+    return text_hash(query)
 
 
 def redact_query(query: str, *, max_length: int = 96) -> str:
-    """Return a coarse redacted query preview for local debugging."""
+    """Return a coarse redacted query preview for local debugging.
+
+    This is intentionally a convenience redactor, not a DLP or anonymisation
+    system. Production systems should apply their own data-classification and
+    retention controls before persisting user content.
+    """
 
     redacted = re.sub(r"[\w.+-]+@[\w.-]+\.\w+", "[email]", query)
     redacted = re.sub(r"\b\d{3,}\b", "[number]", redacted)
@@ -127,15 +142,12 @@ def query_trace_fields(query: str, *, mode: QueryTraceMode = "hash") -> dict[str
     if mode == "raw":
         return {"query": query}
     if mode == "redacted":
-        return {
-            "query_hash": query_hash(query),
-            "query_redacted": redact_query(query),
-        }
+        return {"query_hash": query_hash(query), "query_redacted": redact_query(query)}
     return {"query_hash": query_hash(query)}
 
 
 def decision_trace_payload(decision: ClarifierOutput) -> dict[str, Any]:
-    """Extract the high-value fields for the clarification data flywheel."""
+    """Extract high-value routing fields for the clarification data flywheel."""
 
     metadata = decision.metadata or {}
     return {

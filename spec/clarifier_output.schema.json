@@ -5,170 +5,54 @@
   "description": "Structured decision object emitted by an Intent Compression Architecture control layer before answer generation.",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "ambiguity_score",
-    "risk_score",
-    "intent_entropy_bits",
-    "intent_hypotheses",
-    "decision",
-    "answer_constraints"
-  ],
+  "required": ["ambiguity_score", "risk_score", "intent_entropy_bits", "intent_hypotheses", "decision", "answer_constraints"],
   "properties": {
-    "query_id": {
-      "type": "string",
-      "description": "Optional identifier linking the decision object to an external trace or request log."
-    },
-    "ambiguity_score": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 1,
-      "description": "Estimated ambiguity of the user query."
-    },
-    "risk_score": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 1,
-      "description": "Estimated safety or premise risk associated with literal compliance."
-    },
-    "intent_entropy_bits": {
-      "type": "number",
-      "minimum": 0,
-      "description": "Entropy of the current intent distribution in bits."
-    },
-    "risk_labels": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Optional categorical risk labels such as defamation_risk, medical_risk, or false_premise."
-    },
+    "query_id": {"type": ["string", "null"]},
+    "trace_id": {"type": ["string", "null"]},
+    "ambiguity_score": {"type": "number", "minimum": 0, "maximum": 1},
+    "risk_score": {"type": "number", "minimum": 0, "maximum": 1},
+    "intent_entropy_bits": {"type": "number", "minimum": 0},
+    "risk_labels": {"type": "array", "items": {"type": "string"}},
     "intent_hypotheses": {
-      "type": "array",
-      "minItems": 1,
+      "type": "array", "minItems": 1,
       "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "label",
-          "probability",
-          "answer_delta_if_true"
-        ],
+        "type": "object", "additionalProperties": false,
+        "required": ["label", "probability", "answer_delta_if_true"],
         "properties": {
-          "label": {
-            "type": "string"
-          },
-          "probability": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1
-          },
-          "answer_delta_if_true": {
-            "type": "string",
-            "enum": [
-              "low",
-              "medium",
-              "high"
-            ]
-          },
-          "notes": {
-            "type": "string"
-          }
+          "label": {"type": "string", "minLength": 1},
+          "probability": {"type": "number", "minimum": 0, "maximum": 1},
+          "answer_delta_if_true": {"type": "string", "enum": ["low", "medium", "high"]},
+          "notes": {"type": ["string", "null"]},
+          "metadata": {"type": ["object", "null"], "additionalProperties": true}
         }
-      },
-      "description": "Plausible intent interpretations and their current probabilities."
+      }
     },
     "candidate_clarifiers": {
       "type": "array",
       "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "id",
-          "question",
-          "expected_information_gain_bits",
-          "expected_utility",
-          "estimated_cost_tokens"
-        ],
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "question", "expected_information_gain_bits", "expected_utility", "estimated_cost_tokens"],
         "properties": {
-          "id": {
-            "type": "string"
-          },
-          "question": {
-            "type": "string"
-          },
-          "expected_information_gain_bits": {
-            "type": "number"
-          },
-          "expected_utility": {
-            "type": "number"
-          },
-          "estimated_cost_tokens": {
-            "type": "number",
-            "minimum": 0
-          },
-          "estimated_latency_ms": {
-            "type": "number",
-            "minimum": 0
-          }
+          "id": {"type": "string", "minLength": 1},
+          "question": {"type": "string", "minLength": 1},
+          "expected_information_gain_bits": {"type": "number", "minimum": 0},
+          "expected_utility": {"type": "number"},
+          "estimated_cost_tokens": {"type": "number", "minimum": 0},
+          "estimated_latency_ms": {"type": ["number", "null"], "minimum": 0},
+          "estimated_token_savings": {"type": ["number", "null"]},
+          "metadata": {"type": ["object", "null"], "additionalProperties": true}
         }
-      },
-      "description": "Optional ranked candidate clarification questions considered by the controller."
+      }
     },
-    "decision": {
-      "type": "string",
-      "enum": [
-        "answer_direct",
-        "ask_clarifier",
-        "premise_check",
-        "refuse_redirect"
-      ],
-      "description": "Routing decision selected by the control layer."
-    },
-    "selected_clarifier_id": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "description": "Identifier of the selected clarifier when decision is ask_clarifier or premise_check."
-    },
-    "clarifying_question": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "description": "Question to present to the user when clarification is selected."
-    },
-    "expected_utility": {
-      "type": [
-        "number",
-        "null"
-      ],
-      "description": "Expected utility of the selected decision or clarifier."
-    },
-    "decision_threshold": {
-      "type": [
-        "number",
-        "null"
-      ],
-      "description": "Domain-specific threshold used to decide whether clarification is worth the extra turn."
-    },
-    "answer_constraints": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Constraints or handling instructions that should condition the final answer."
-    },
-    "safe_redirect": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "description": "Suggested safe redirection when the correct action is refusal or constrained assistance."
-    },
-    "rationale": {
-      "type": "string",
-      "description": "Human-readable explanation of the routing decision for debugging or trace review."
-    }
+    "decision": {"type": "string", "enum": ["answer_direct", "ask_clarifier", "premise_check", "refuse_redirect"]},
+    "selected_clarifier_id": {"type": ["string", "null"]},
+    "clarifying_question": {"type": ["string", "null"]},
+    "expected_utility": {"type": ["number", "null"]},
+    "decision_threshold": {"type": ["number", "null"]},
+    "answer_constraints": {"type": "array", "items": {"type": "string"}},
+    "safe_redirect": {"type": ["string", "null"]},
+    "rationale": {"type": "string", "default": ""},
+    "estimated_token_savings": {"type": ["number", "null"]},
+    "metadata": {"type": ["object", "null"], "additionalProperties": true}
   }
 }

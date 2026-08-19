@@ -1,10 +1,17 @@
 # Local Validation
 
-> **Status: reference/archive.** These commands validate the archived Python mock/reference package in this repository. For the active KynticAI Clarity Engine / ICA implementation, use `C:\Kyntic\kynticai-clarity-gateway`.
+> **Status: reference/archive.** These commands validate the offline Python reference package and reproducibility artefacts preserved in this repository. They are not a validation procedure for the active Clarity Gateway product.
 
-Routine local development is offline and uses the mock ICA provider. Do not add live provider, hosted API, or paid-service calls to the default validation path.
+Routine validation is offline and uses the deterministic mock provider. No real provider key is needed.
 
-## Safe Default
+## Core package
+
+```bash
+python -m pip install -e ".[dev]"
+python -m pytest
+```
+
+## Full archive validation
 
 ```bash
 python -m pip install -r requirements.txt
@@ -12,7 +19,7 @@ python -m pip install -e ".[dev]"
 bash scripts/validate_local.sh
 ```
 
-On Windows PowerShell:
+PowerShell:
 
 ```powershell
 python -m pip install -r requirements.txt
@@ -20,8 +27,23 @@ python -m pip install -e ".[dev]"
 .\scripts\validate_local.ps1
 ```
 
-The validation helpers compile Python files, validate the JSON schema/example, run `pytest`, build the package, run CLI smoke checks with `--provider mock`, run the example CLI demo, and rebuild the pilot report. They do not require `OPENAI_API_KEY`, `XAI_API_KEY`, or another live provider credential.
+Set `PYTHON` first if a specific interpreter should be used.
 
-## Explicit Proof Paths
+The full helpers:
 
-No live provider adapters are bundled in this repository today. If one is added later, keep the default path on `--provider mock` and require `KYNTIC_RUN_E2E_TESTS=1` or a provider-specific opt-in before any live API call.
+- compile Python sources and tooling
+- validate the JSON Schema and canonical example
+- verify structural parity between the hand-authored schema and Pydantic model
+- run `pytest`
+- build the Python package
+- smoke-test CLI help, dry-run and JSON output
+- run the example CLI
+- rebuild the pilot report
+
+## Dependency note
+
+`requirements.txt` is the intentionally loose dependency set for archive artefact/evaluation tooling. `requirements.lock` pins that same toolchain for a closer historical replay. Neither file is a complete resolver lock for `ica-core` plus its `.[dev]` dependencies; those dependencies are declared in `pyproject.toml`.
+
+## Live proof boundary
+
+No live provider adapters are bundled. If one is ever added for historical experimentation, default validation must remain on the offline provider and any live call must require an explicit opt-in such as `KYNTIC_RUN_E2E_TESTS=1`.
